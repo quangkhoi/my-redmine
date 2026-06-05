@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redmine Dashboard</title>
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <link rel="stylesheet" href="./styles.css?v=20260605-1" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260605-1" />
+  </head>
+  <body>
+    <main class="app-layout">
+      <aside class="sidebar" id="appSidebar" aria-label="Feature list">
+        <button class="brand" id="collapseSidebar" type="button" aria-controls="appSidebar" aria-expanded="true">
+          <span>Redmine</span>
+          <strong>Work view</strong>
+        </button>
+        <nav class="nav-list">
+          <div class="nav-group active">
+            <button class="nav-item active" type="button" data-view="dashboard">Dashboard</button>
+            <div class="nav-panel">
+              <button class="sidebar-action" id="loadDashboard" type="button">Load data</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-item" type="button" data-view="my-task">My Task</button>
+            <div class="nav-panel">
+              <label class="sidebar-field">
+                <span>User</span>
+                <select id="myTaskUserId">
+                  <option value="106">Dinh Thanh Duy</option>
+                  <option value="94">Nam Tran</option>
+                  <option value="99">Nguyen Tuyen</option>
+                  <option value="114" selected>Duong Khoi</option>
+                  <option value="123">Phi Hoang</option>
+                </select>
+              </label>
+              <label class="sidebar-field">
+                <span>Start date</span>
+                <input id="myTaskStartDate" type="date" />
+              </label>
+              <label class="sidebar-field">
+                <span>Start date to</span>
+                <input id="myTaskEndDate" type="date" />
+              </label>
+              <button class="sidebar-action" id="loadMyTask" type="button">Load data</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-item" type="button" data-view="report">Report</button>
+            <div class="nav-panel">
+              <label class="sidebar-field">
+                <span>Start date</span>
+                <input id="reportStartDate" type="date" />
+              </label>
+              <button class="sidebar-action" id="loadReport" type="button">Load data</button>
+              <button class="sidebar-action" id="exportReport" type="button" disabled>Export Excel</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-item" type="button" data-view="login-time">Login time</button>
+            <div class="nav-panel">
+              <label class="sidebar-field">
+                <span>Year</span>
+                <select id="loginYear"></select>
+              </label>
+              <label class="sidebar-field">
+                <span>Month</span>
+                <select id="loginMonth"></select>
+              </label>
+              <button class="sidebar-action" id="loadLoginTime" type="button">Load data</button>
+            </div>
+          </div>
+        </nav>
+      </aside>
+      <button class="collapsed-rail" id="expandSidebar" type="button" aria-controls="appSidebar" aria-label="Open sidebar">
+        &gt;&gt;
+      </button>
+
+      <section class="content-area">
+        <section class="view active" id="dashboardView" aria-label="Dashboard">
+          <header class="page-header">
+            <p class="eyebrow">Dashboard</p>
+          </header>
+
+          <section class="summary-grid" aria-label="Status summary">
+            <article class="metric">
+              <span>Processing</span>
+              <strong id="processingCount">0</strong>
+            </article>
+            <article class="metric">
+              <span>Not started</span>
+              <strong id="notStartedCount">0</strong>
+            </article>
+            <article class="metric">
+              <span>Processed</span>
+              <strong id="processedCount">0</strong>
+            </article>
+          </section>
+
+          <section class="dashboard-list" aria-label="Processing issue list">
+            <div class="list-heading">
+              <div>
+                <h2>1. Processing (start date &gt;= <span id="processingStartCondition">-</span>)</h2>
+              </div>
+              <span id="processingInfo">0 issue</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>ID</th>
+                    <th>Project</th>
+                    <th>Subject</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th>Start date</th>
+                    <th>Due date</th>
+                    <th>% done</th>
+                  </tr>
+                </thead>
+                <tbody id="processingRows">
+                  <tr><td colspan="9" class="empty-cell">No matching issues.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="dashboard-list" aria-label="Not started issue list">
+            <div class="list-heading">
+              <div>
+                <h2>2. Not started (start date &gt;= <span id="notStartedStartCondition">-</span>, due date &lt;= <span id="notStartedDueCondition">-</span>)</h2>
+              </div>
+              <span id="notStartedInfo">0 issue</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>ID</th>
+                    <th>Project</th>
+                    <th>Subject</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th>Start date</th>
+                    <th>Due date</th>
+                    <th>% done</th>
+                  </tr>
+                </thead>
+                <tbody id="notStartedRows">
+                  <tr><td colspan="9" class="empty-cell">No matching issues.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="dashboard-list" aria-label="Processed issue list">
+            <div class="list-heading">
+              <div>
+                <h2>3. Processed</h2>
+              </div>
+              <span id="processedInfo">0 issue</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>ID</th>
+                    <th>Project</th>
+                    <th>Tracker</th>
+                    <th>Subject</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th>Start date</th>
+                    <th>Due date</th>
+                    <th>% done</th>
+                    <th>リリース対象</th>
+                  </tr>
+                </thead>
+                <tbody id="processedRows">
+                  <tr><td colspan="11" class="empty-cell">No matching issues.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="myTaskView" aria-label="My Task">
+          <header class="page-header">
+            <p class="eyebrow">My Task</p>
+          </header>
+
+          <section class="dashboard-list" aria-label="My task issue list">
+            <div class="list-heading">
+              <div>
+                <h2>My Task (start date &gt;= <span id="myTaskStartCondition">-</span>, start date &lt;= <span id="myTaskEndCondition">-</span>)</h2>
+              </div>
+              <span id="myTaskInfo">0 issue</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>ID</th>
+                    <th>Project</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Start date</th>
+                    <th>Due date</th>
+                  </tr>
+                </thead>
+                <tbody id="myTaskRows">
+                  <tr><td colspan="7" class="empty-cell">No matching issues.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="reportView" aria-label="Report">
+          <header class="page-header">
+            <p class="eyebrow">Report</p>
+          </header>
+
+          <section class="dashboard-list" aria-label="Last week ticket list for Team C#">
+            <div class="list-heading">
+              <div>
+                <h2>Last week CSharp (start date &lt;= <span id="reportPrevCsharpStartCondition">-</span>, due date &gt;= <span id="reportPrevCsharpDueCondition">-</span>)</h2>
+              </div>
+              <span id="reportPrevCsharpInfo">0 issue</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Subject</th>
+                    <th>ID</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th>Start date</th>
+                    <th>Due date</th>
+                    <th>Spent time</th>
+                  </tr>
+                </thead>
+                <tbody id="reportPrevCsharpRows">
+                  <tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="dashboard-list" aria-label="Last week ticket list for Team WEB">
+            <div class="list-heading">
+              <div>
+                <h2>Last week WEB (start date &lt;= <span id="reportPrevWebStartCondition">-</span>, due date &gt;= <span id="reportPrevWebDueCondition">-</span>)</h2>
+              </div>
+              <span id="reportPrevWebInfo">0 issue</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Subject</th>
+                    <th>ID</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th>Start date</th>
+                    <th>Due date</th>
+                    <th>Spent time</th>
+                  </tr>
+                </thead>
+                <tbody id="reportPrevWebRows">
+                  <tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="dashboard-list" aria-label="This week ticket list for Team C#">
+            <div class="list-heading">
+              <div>
+                <h2>This week CSharp (start date &lt;= <span id="reportCurrentCsharpStartCondition">-</span>, due date &gt;= <span id="reportCurrentCsharpDueCondition">-</span>)</h2>
+              </div>
+              <span id="reportCurrentCsharpInfo">0 issue</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Subject</th>
+                    <th>ID</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th>Start date</th>
+                    <th>Due date</th>
+                    <th>Spent time</th>
+                  </tr>
+                </thead>
+                <tbody id="reportCurrentCsharpRows">
+                  <tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="dashboard-list" aria-label="This week ticket list for Team WEB">
+            <div class="list-heading">
+              <div>
+                <h2>This week WEB (start date &lt;= <span id="reportCurrentWebStartCondition">-</span>, due date &gt;= <span id="reportCurrentWebDueCondition">-</span>)</h2>
+              </div>
+              <span id="reportCurrentWebInfo">0 issue</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Subject</th>
+                    <th>ID</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th>Start date</th>
+                    <th>Due date</th>
+                    <th>Spent time</th>
+                  </tr>
+                </thead>
+                <tbody id="reportCurrentWebRows">
+                  <tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="loginTimeView" aria-label="Login time">
+          <header class="page-header">
+            <p class="eyebrow">Login time</p>
+          </header>
+
+          <section class="dashboard-list" aria-label="Login time issue list">
+            <div class="list-heading">
+              <div>
+                <h2>Login time (start date &lt;= <span id="loginStartCondition">-</span>, due date &gt;= <span id="loginDueCondition">-</span>)</h2>
+              </div>
+              <div class="list-actions">
+                <span id="loginTimeInfo">0 issue</span>
+                <button class="list-action-button" id="toggleLoginTimeUser114" type="button" aria-pressed="false">
+                  Hide time
+                </button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>ID</th>
+                    <th>Spent time</th>
+                    <th>Subject</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th>Start date</th>
+                    <th>Due date</th>
+                  </tr>
+                </thead>
+                <tbody id="loginTimeRows">
+                  <tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="./config.js?v=20260605-1"></script>
+    <script src="./vendor/xlsx.full.min.js?v=20260605-1"></script>
+    <script src="./app.js?v=20260605-1"></script>
+  </body>
+</html>
