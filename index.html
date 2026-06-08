@@ -78,13 +78,7 @@
             </div>
           </div>
         </nav>
-      </aside>
-      <button class="collapsed-rail" id="expandSidebar" type="button" aria-controls="appSidebar" aria-label="Open sidebar">
-        &gt;&gt;
-      </button>
-
-      <section class="content-area">
-        <section class="config-panel" id="configPanel" aria-label="Redmine configuration">
+        <section class="sidebar-config" id="configPanel" aria-label="Redmine configuration">
           <div>
             <p class="eyebrow">Redmine Config</p>
             <p class="config-state">Enter configuration before loading data.</p>
@@ -96,7 +90,7 @@
             </label>
             <label>
               <span>Proxy URL</span>
-              <input id="configProxyUrl" type="url" autocomplete="off" placeholder="http://127.0.0.1:8787" />
+              <input id="configProxyUrl" type="url" autocomplete="off" placeholder="https://proxy.example.com" />
             </label>
             <label>
               <span>API key</span>
@@ -112,11 +106,16 @@
             </label>
             <div class="config-actions">
               <button class="secondary-button" id="clearConfig" type="button">Clear</button>
-              <button class="primary-button" type="submit">Save</button>
+              <button class="sidebar-action" type="submit">Save</button>
             </div>
           </form>
         </section>
+      </aside>
+      <button class="collapsed-rail" id="expandSidebar" type="button" aria-controls="appSidebar" aria-label="Open sidebar">
+        &gt;&gt;
+      </button>
 
+      <section class="content-area">
         <section class="view active" id="dashboardView" aria-label="Dashboard">
           <header class="page-header">
             <p class="eyebrow">Dashboard</p>
@@ -282,8 +281,9 @@
         </section>
 
         <section class="view" id="reportView" aria-label="Weekly Report">
-          <header class="page-header">
+          <header class="page-header split-header">
             <p class="eyebrow">Weekly Report</p>
+            <span class="page-range" id="reportRangeLabel">Report time: -</span>
           </header>
 
           <section class="dashboard-list" aria-label="Last week ticket list for Team C#">
@@ -443,6 +443,6 @@
     <script src="./config.example.js?v=20260608-9"></script>
     <script src="./config.js?v=local"></script>
     <script src="./vendor/xlsx.full.min.js?v=20260608-8"></script>
-    <script src="./app.js?v=20260608-9"></script>
+    <script src="./app.js?v=20260608-10"></script>
   </body>
 </html>

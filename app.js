@@ -83,6 +83,7 @@ const els = {
   reportPrevWebStartCondition: document.querySelector("#reportPrevWebStartCondition"),
   reportPrevWebDueCondition: document.querySelector("#reportPrevWebDueCondition"),
   reportStartDate: document.querySelector("#reportStartDate"),
+  reportRangeLabel: document.querySelector("#reportRangeLabel"),
   reportCurrentCsharpStartCondition: document.querySelector("#reportCurrentCsharpStartCondition"),
   reportCurrentCsharpDueCondition: document.querySelector("#reportCurrentCsharpDueCondition"),
   reportCurrentWebStartCondition: document.querySelector("#reportCurrentWebStartCondition"),
@@ -198,9 +199,16 @@ function renderConfigForm() {
 function renderConfigPanel() {
   const isReady = hasRuntimeConfig();
   els.configPanel.classList.toggle("is-configured", isReady);
-  els.configPanel.querySelector(".config-state").textContent = isReady
+  els.configPanel.querySelector(".config-state").textContent = getConfigStateMessage(isReady);
+}
+
+function getConfigStateMessage(isReady) {
+  if (isConfiguredProxyBlocked()) {
+    return "GitHub Pages cannot call an HTTP local proxy. Use direct Redmine HTTPS or an HTTPS proxy.";
+  }
+  return isReady
     ? "Configured for this browser session."
-    : "Enter a local proxy URL or Redmine credentials before loading data.";
+    : "Enter a Redmine URL/API key or an HTTPS proxy before loading data.";
 }
 
 function saveRuntimeConfig(event) {
@@ -234,6 +242,9 @@ function clearRuntimeConfig() {
 function hasRuntimeConfig() {
   const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
   if (!apiBaseUrl) {
+    return false;
+  }
+  if (isConfiguredProxyBlocked()) {
     return false;
   }
   if (normalizeBaseUrl(config.proxyUrl || "")) {
@@ -364,6 +375,7 @@ function renderReportConditions() {
   els.reportCurrentCsharpDueCondition.textContent = formatDate(ranges.current.monday);
   els.reportCurrentWebStartCondition.textContent = formatDate(ranges.current.friday);
   els.reportCurrentWebDueCondition.textContent = formatDate(ranges.current.monday);
+  els.reportRangeLabel.textContent = `Report time: ${formatDate(reportStartDate)} ~ ${formatDate(ranges.current.friday)}`;
 }
 
 function renderInitialEmptyLists() {
@@ -1042,6 +1054,12 @@ async function redmineGet(url) {
 }
 
 async function safeFetch(url, options) {
+  if (isBlockedHttpProxyFromHttpsPage(url)) {
+    throw new Error(
+      "GitHub Pages runs on HTTPS and cannot call an HTTP local proxy such as http://127.0.0.1:8787. Use direct Redmine HTTPS if CORS allows it, or configure an HTTPS proxy endpoint."
+    );
+  }
+
   try {
     return await fetch(url, options);
   } catch (error) {
@@ -1083,6 +1101,28 @@ function buildBasicAuthHeader() {
 function isProxyRequest(url) {
   const proxyUrl = normalizeBaseUrl(config.proxyUrl || "");
   return proxyUrl && url.toString().startsWith(proxyUrl);
+}
+
+function isBlockedHttpProxyFromHttpsPage(url) {
+  if (window.location.protocol !== "https:" || url.protocol !== "http:") {
+    return false;
+  }
+
+  const host = url.hostname.toLowerCase();
+  return host === "127.0.0.1" || host === "localhost" || host === "::1";
+}
+
+function isConfiguredProxyBlocked() {
+  const proxyUrl = normalizeBaseUrl(config.proxyUrl || "");
+  if (!proxyUrl) {
+    return false;
+  }
+
+  try {
+    return isBlockedHttpProxyFromHttpsPage(new URL(proxyUrl));
+  } catch (error) {
+    return false;
+  }
 }
 
 function isStatus(issue, statusName) {

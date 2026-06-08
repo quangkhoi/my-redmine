@@ -65,7 +65,7 @@ button {
   border-right: 1px solid var(--line);
   background: #ffffff;
   padding: 24px 18px;
-  overflow: hidden;
+  overflow-y: auto;
   transition: opacity 0.18s ease;
 }
 
@@ -106,6 +106,14 @@ button {
 .nav-list {
   display: grid;
   gap: 8px;
+}
+
+.sidebar-config {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  margin-top: auto;
+  padding-top: 16px;
 }
 
 .nav-group {
@@ -224,6 +232,23 @@ button {
   margin-bottom: 12px;
 }
 
+.split-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page-range {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #e8f4f1;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 11px;
+}
+
 .eyebrow {
   margin: 0 0 7px;
   color: var(--accent);
@@ -284,20 +309,12 @@ h2 {
   background: var(--surface-soft);
 }
 
-.config-panel {
-  display: grid;
-  gap: 14px;
-  border: 1px solid #f0c989;
-  border-radius: 8px;
-  background: #fff9ed;
-  box-shadow: var(--shadow);
-  margin-bottom: 18px;
-  padding: 16px 18px;
+.sidebar-config {
+  border-color: #f0c989;
 }
 
-.config-panel.is-configured {
-  border-color: #99d6c9;
-  background: #f3fbf8;
+.sidebar-config.is-configured {
+  border-top-color: #99d6c9;
 }
 
 .config-state {
@@ -307,9 +324,7 @@ h2 {
 
 .config-form {
   display: grid;
-  grid-template-columns: repeat(5, minmax(120px, 1fr)) auto;
   gap: 10px;
-  align-items: end;
 }
 
 .config-form label {
@@ -336,8 +351,15 @@ h2 {
 }
 
 .config-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.config-actions .sidebar-action,
+.config-actions .secondary-button {
+  min-width: 0;
+  width: 100%;
 }
 
 .summary-grid {
@@ -662,12 +684,9 @@ tbody tr:hover {
     width: 100%;
   }
 
-  .config-form {
-    grid-template-columns: 1fr;
-  }
-
-  .config-actions {
-    justify-content: flex-end;
+  .split-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
