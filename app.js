@@ -78,24 +78,10 @@ const els = {
   myTaskEndCondition: document.querySelector("#myTaskEndCondition"),
   myTaskInfo: document.querySelector("#myTaskInfo"),
   myTaskRows: document.querySelector("#myTaskRows"),
-  reportPrevCsharpStartCondition: document.querySelector("#reportPrevCsharpStartCondition"),
-  reportPrevCsharpDueCondition: document.querySelector("#reportPrevCsharpDueCondition"),
-  reportPrevWebStartCondition: document.querySelector("#reportPrevWebStartCondition"),
-  reportPrevWebDueCondition: document.querySelector("#reportPrevWebDueCondition"),
   reportStartDate: document.querySelector("#reportStartDate"),
   reportRangeLabel: document.querySelector("#reportRangeLabel"),
-  reportCurrentCsharpStartCondition: document.querySelector("#reportCurrentCsharpStartCondition"),
-  reportCurrentCsharpDueCondition: document.querySelector("#reportCurrentCsharpDueCondition"),
-  reportCurrentWebStartCondition: document.querySelector("#reportCurrentWebStartCondition"),
-  reportCurrentWebDueCondition: document.querySelector("#reportCurrentWebDueCondition"),
-  reportPrevCsharpInfo: document.querySelector("#reportPrevCsharpInfo"),
-  reportPrevWebInfo: document.querySelector("#reportPrevWebInfo"),
-  reportCurrentCsharpInfo: document.querySelector("#reportCurrentCsharpInfo"),
-  reportCurrentWebInfo: document.querySelector("#reportCurrentWebInfo"),
-  reportPrevCsharpRows: document.querySelector("#reportPrevCsharpRows"),
-  reportPrevWebRows: document.querySelector("#reportPrevWebRows"),
-  reportCurrentCsharpRows: document.querySelector("#reportCurrentCsharpRows"),
-  reportCurrentWebRows: document.querySelector("#reportCurrentWebRows"),
+  reportInfo: document.querySelector("#reportInfo"),
+  reportRows: document.querySelector("#reportRows"),
   loginYear: document.querySelector("#loginYear"),
   loginMonth: document.querySelector("#loginMonth"),
   loginStartCondition: document.querySelector("#loginStartCondition"),
@@ -367,14 +353,6 @@ function renderLoginTimeConditions() {
 function renderReportConditions() {
   const ranges = getReportDateRanges();
   const reportStartDate = getSelectedReportStartDate();
-  els.reportPrevCsharpStartCondition.textContent = formatDate(ranges.previous.friday);
-  els.reportPrevCsharpDueCondition.textContent = formatDate(reportStartDate);
-  els.reportPrevWebStartCondition.textContent = formatDate(ranges.previous.friday);
-  els.reportPrevWebDueCondition.textContent = formatDate(reportStartDate);
-  els.reportCurrentCsharpStartCondition.textContent = formatDate(ranges.current.friday);
-  els.reportCurrentCsharpDueCondition.textContent = formatDate(ranges.current.monday);
-  els.reportCurrentWebStartCondition.textContent = formatDate(ranges.current.friday);
-  els.reportCurrentWebDueCondition.textContent = formatDate(ranges.current.monday);
   els.reportRangeLabel.textContent = `Report time: ${formatDate(reportStartDate)} ~ ${formatDate(ranges.current.friday)}`;
 }
 
@@ -384,10 +362,7 @@ function renderInitialEmptyLists() {
   renderList("processed", []);
   renderDailyReport([]);
   renderMyTaskList([]);
-  renderReportList("reportPrevCsharp", []);
-  renderReportList("reportPrevWeb", []);
-  renderReportList("reportCurrentCsharp", []);
-  renderReportList("reportCurrentWeb", []);
+  renderReport({ prevCsharp: [], prevWeb: [], currentCsharp: [], currentWeb: [] }, 0);
   renderLoginTimeList([]);
 }
 
@@ -402,11 +377,7 @@ function renderMyTaskLoading() {
 }
 
 function renderReportLoading() {
-  [els.reportPrevCsharpRows, els.reportPrevWebRows, els.reportCurrentCsharpRows, els.reportCurrentWebRows].forEach(
-    (target) => {
-      target.innerHTML = '<tr><td colspan="8" class="empty-cell">Loading data...</td></tr>';
-    }
-  );
+  els.reportRows.innerHTML = '<tr><td colspan="8" class="empty-cell">Loading data...</td></tr>';
 }
 
 function renderLoginTimeLoading() {
@@ -530,12 +501,9 @@ async function loadReport() {
     renderReportConditions();
     const lists = await fetchReportLists();
     loadedReportLists = lists;
-    renderReportList("reportPrevCsharp", lists.prevCsharp);
-    renderReportList("reportPrevWeb", lists.prevWeb);
-    renderReportList("reportCurrentCsharp", lists.currentCsharp);
-    renderReportList("reportCurrentWeb", lists.currentWeb);
     const total =
       lists.prevCsharp.length + lists.prevWeb.length + lists.currentCsharp.length + lists.currentWeb.length;
+    renderReport(lists, total);
     els.exportReport.disabled = false;
     setStatus(`Loaded ${total} report issues from Redmine.`, "ok");
   } catch (error) {
@@ -1581,18 +1549,21 @@ function applyLoginTimeUser114Filter() {
   els.toggleLoginTimeUser114.setAttribute("aria-pressed", String(hideLoginTimeUser114));
 }
 
-function renderReportList(name, issues) {
-  const rowsEl = els[`${name}Rows`];
-  const infoEl = els[`${name}Info`];
-
-  infoEl.textContent = `${issues.length} issue`;
-
-  if (!issues.length) {
-    rowsEl.innerHTML = '<tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>';
-    return;
-  }
-
-  rowsEl.innerHTML = issues.map(reportIssueRow).join("");
+function renderReport(lists, total) {
+  els.reportInfo.textContent = `${total} issue`;
+  els.reportRows.innerHTML = [
+    reportSectionRow("■先週の作業"),
+    reportTeamRow("C#開発"),
+    reportIssueRows(lists.prevCsharp || []),
+    reportTeamRow("WEB開発"),
+    reportIssueRows(lists.prevWeb || []),
+    reportSpacerRow(),
+    reportSectionRow("◆今週の計画"),
+    reportTeamRow("C#開発"),
+    reportIssueRows(lists.currentCsharp || []),
+    reportTeamRow("WEB開発"),
+    reportIssueRows(lists.currentWeb || []),
+  ].join("");
 }
 
 function getIssueUrl(issue) {
@@ -1718,19 +1689,51 @@ function processedIssueRow(issue, index) {
   `;
 }
 
+function reportSectionRow(title) {
+  return `<tr class="report-section-row"><td colspan="8">${escapeHtml(title)}</td></tr>`;
+}
+
+function reportTeamRow(title) {
+  return `<tr class="report-team-row"><td colspan="8">${escapeHtml(title)}</td></tr>`;
+}
+
+function reportSpacerRow() {
+  return '<tr class="report-spacer-row"><td colspan="8"></td></tr>';
+}
+
+function reportIssueRows(issues) {
+  const exportIssues = issues.length ? issues : [null];
+  return exportIssues.map(reportIssueRow).join("");
+}
+
 function reportIssueRow(issue, index) {
+  if (!issue) {
+    return `
+      <tr>
+        <td>${index + 1}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    `;
+  }
+
   const issueUrl = getIssueUrl(issue);
 
   return `
     <tr>
       <td>${index + 1}</td>
-      <td>${escapeHtml(issue.subject || "-")}</td>
+      <td>${escapeHtml((issue.project && issue.project.name) || "")}</td>
       <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
+      <td>${escapeHtml(issue.subject || "")}</td>
+      <td></td>
       <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatDate(issue.start_date))}</td>
-      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
-      <td>${escapeHtml(formatHours(issue.reportSpentHours))}</td>
+      <td>${escapeHtml(formatExcelDate(issue.start_date))}</td>
+      <td>${escapeHtml(formatExcelDate(issue.due_date))}</td>
     </tr>
   `;
 }
@@ -1818,11 +1821,8 @@ function renderLoginTimeError(message) {
 
 function renderReportError(message) {
   const safeMessage = escapeHtml(message);
-  [els.reportPrevCsharpRows, els.reportPrevWebRows, els.reportCurrentCsharpRows, els.reportCurrentWebRows].forEach(
-    (target) => {
-      target.innerHTML = `<tr><td colspan="8" class="empty-cell">${safeMessage}</td></tr>`;
-    }
-  );
+  els.reportInfo.textContent = "0 issue";
+  els.reportRows.innerHTML = `<tr><td colspan="8" class="empty-cell">${safeMessage}</td></tr>`;
 }
 
 function isOverdue(issue) {

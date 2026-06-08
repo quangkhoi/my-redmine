@@ -521,6 +521,40 @@ table {
   border-collapse: collapse;
 }
 
+.report-table {
+  min-width: 1120px;
+}
+
+.report-table th:nth-child(1),
+.report-table td:nth-child(1) {
+  width: 56px;
+  text-align: center;
+}
+
+.report-table th:nth-child(2),
+.report-table td:nth-child(2) {
+  width: 220px;
+}
+
+.report-table th:nth-child(3),
+.report-table td:nth-child(3) {
+  width: 110px;
+}
+
+.report-table th:nth-child(5),
+.report-table td:nth-child(5) {
+  width: 260px;
+}
+
+.report-table th:nth-child(6),
+.report-table td:nth-child(6),
+.report-table th:nth-child(7),
+.report-table td:nth-child(7),
+.report-table th:nth-child(8),
+.report-table td:nth-child(8) {
+  width: 110px;
+}
+
 th,
 td {
   border-bottom: 1px solid var(--line);
@@ -542,6 +576,28 @@ td {
 
 tbody tr:hover {
   background: #f8fbfa;
+}
+
+.report-section-row td {
+  background: #ffffff;
+  border-bottom: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 800;
+  padding: 18px 14px 10px;
+}
+
+.report-team-row td {
+  background: #e8f4f1;
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+.report-spacer-row td {
+  height: 28px;
+  border-bottom: 0;
+  background: #ffffff;
+  padding: 0;
 }
 
 .issue-row-success td {

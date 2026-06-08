@@ -286,112 +286,28 @@
             <span class="page-range" id="reportRangeLabel">Report time: -</span>
           </header>
 
-          <section class="dashboard-list" aria-label="Last week ticket list for Team C#">
+          <section class="dashboard-list" aria-label="Weekly report content">
             <div class="list-heading">
               <div>
-                <h2>Last week CSharp (start date &lt;= <span id="reportPrevCsharpStartCondition">-</span>, due date &gt;= <span id="reportPrevCsharpDueCondition">-</span>)</h2>
+                <h2>週報</h2>
               </div>
-              <span id="reportPrevCsharpInfo">0 issue</span>
+              <span id="reportInfo">0 issue</span>
             </div>
             <div class="table-wrap">
-              <table>
+              <table class="report-table">
                 <thead>
                   <tr>
                     <th>No</th>
-                    <th>Subject</th>
-                    <th>ID</th>
-                    <th>Assignee</th>
-                    <th>Status</th>
-                    <th>Start date</th>
-                    <th>Due date</th>
-                    <th>Spent time</th>
+                    <th>クライアント名</th>
+                    <th>チケットID</th>
+                    <th>タイトル</th>
+                    <th>課題</th>
+                    <th>ステータス</th>
+                    <th>開始日</th>
+                    <th>終了日</th>
                   </tr>
                 </thead>
-                <tbody id="reportPrevCsharpRows">
-                  <tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="dashboard-list" aria-label="Last week ticket list for Team WEB">
-            <div class="list-heading">
-              <div>
-                <h2>Last week WEB (start date &lt;= <span id="reportPrevWebStartCondition">-</span>, due date &gt;= <span id="reportPrevWebDueCondition">-</span>)</h2>
-              </div>
-              <span id="reportPrevWebInfo">0 issue</span>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Subject</th>
-                    <th>ID</th>
-                    <th>Assignee</th>
-                    <th>Status</th>
-                    <th>Start date</th>
-                    <th>Due date</th>
-                    <th>Spent time</th>
-                  </tr>
-                </thead>
-                <tbody id="reportPrevWebRows">
-                  <tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="dashboard-list" aria-label="This week ticket list for Team C#">
-            <div class="list-heading">
-              <div>
-                <h2>This week CSharp (start date &lt;= <span id="reportCurrentCsharpStartCondition">-</span>, due date &gt;= <span id="reportCurrentCsharpDueCondition">-</span>)</h2>
-              </div>
-              <span id="reportCurrentCsharpInfo">0 issue</span>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Subject</th>
-                    <th>ID</th>
-                    <th>Assignee</th>
-                    <th>Status</th>
-                    <th>Start date</th>
-                    <th>Due date</th>
-                    <th>Spent time</th>
-                  </tr>
-                </thead>
-                <tbody id="reportCurrentCsharpRows">
-                  <tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="dashboard-list" aria-label="This week ticket list for Team WEB">
-            <div class="list-heading">
-              <div>
-                <h2>This week WEB (start date &lt;= <span id="reportCurrentWebStartCondition">-</span>, due date &gt;= <span id="reportCurrentWebDueCondition">-</span>)</h2>
-              </div>
-              <span id="reportCurrentWebInfo">0 issue</span>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Subject</th>
-                    <th>ID</th>
-                    <th>Assignee</th>
-                    <th>Status</th>
-                    <th>Start date</th>
-                    <th>Due date</th>
-                    <th>Spent time</th>
-                  </tr>
-                </thead>
-                <tbody id="reportCurrentWebRows">
+                <tbody id="reportRows">
                   <tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>
                 </tbody>
               </table>
@@ -443,6 +359,6 @@
     <script src="./config.example.js?v=20260608-9"></script>
     <script src="./config.js?v=local"></script>
     <script src="./vendor/xlsx.full.min.js?v=20260608-8"></script>
-    <script src="./app.js?v=20260608-10"></script>
+    <script src="./app.js?v=20260608-11"></script>
   </body>
 </html>
