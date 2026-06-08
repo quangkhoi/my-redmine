@@ -1673,7 +1673,7 @@ function isStartDateBeyondDashboardThreshold(issue) {
   const startDate = startOfDay(issue.start_date);
   const diffDays = Math.floor((startDate.getTime() - today.getTime()) / 86400000);
   const thresholdDays = today.getDay() === 5 ? 3 : 1;
-  return diffDays > thresholdDays;
+  return diffDays === thresholdDays;
 }
 
 function isSameDate(value, target) {
