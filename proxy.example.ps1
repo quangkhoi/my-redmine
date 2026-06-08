@@ -2,9 +2,9 @@ $ErrorActionPreference = "Stop"
 
 $Port = 8787
 $RedmineBaseUrl = "https://redmine.wdm.co.jp"
-$ApiKey = "48451c36a76333adf1a36e4904f8813abede9ee2"
-$BasicUsername = "wdm"
-$BasicPassword = "1123"
+$ApiKey = "YOUR_REDMINE_API_KEY"
+$BasicUsername = "YOUR_BASIC_AUTH_USERNAME"
+$BasicPassword = "YOUR_BASIC_AUTH_PASSWORD"
 
 $listener = [System.Net.HttpListener]::new()
 $listener.Prefixes.Add("http://127.0.0.1:$Port/")

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Redmine Dashboard</title>
     <meta http-equiv="Cache-Control" content="no-store" />
-    <link rel="stylesheet" href="./styles.css?v=20260605-1" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260605-1" />
+    <link rel="stylesheet" href="./styles.css?v=20260608-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260608-8" />
   </head>
   <body>
     <main class="app-layout">
@@ -20,6 +20,23 @@
             <button class="nav-item active" type="button" data-view="dashboard">Dashboard</button>
             <div class="nav-panel">
               <button class="sidebar-action" id="loadDashboard" type="button">Load data</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-item" type="button" data-view="daily-report">Daily Report</button>
+            <div class="nav-panel">
+              <button class="sidebar-action" id="loadDailyReport" type="button">Load data</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-item" type="button" data-view="report">Weekly Report</button>
+            <div class="nav-panel">
+              <label class="sidebar-field">
+                <span>Start date</span>
+                <input id="reportStartDate" type="date" />
+              </label>
+              <button class="sidebar-action" id="loadReport" type="button">Load data</button>
+              <button class="sidebar-action" id="exportReport" type="button" disabled>Export Excel</button>
             </div>
           </div>
           <div class="nav-group">
@@ -47,17 +64,6 @@
             </div>
           </div>
           <div class="nav-group">
-            <button class="nav-item" type="button" data-view="report">Report</button>
-            <div class="nav-panel">
-              <label class="sidebar-field">
-                <span>Start date</span>
-                <input id="reportStartDate" type="date" />
-              </label>
-              <button class="sidebar-action" id="loadReport" type="button">Load data</button>
-              <button class="sidebar-action" id="exportReport" type="button" disabled>Export Excel</button>
-            </div>
-          </div>
-          <div class="nav-group">
             <button class="nav-item" type="button" data-view="login-time">Login time</button>
             <div class="nav-panel">
               <label class="sidebar-field">
@@ -78,6 +84,39 @@
       </button>
 
       <section class="content-area">
+        <section class="config-panel" id="configPanel" aria-label="Redmine configuration">
+          <div>
+            <p class="eyebrow">Redmine Config</p>
+            <p class="config-state">Enter configuration before loading data.</p>
+          </div>
+          <form class="config-form" id="configForm">
+            <label>
+              <span>Redmine URL</span>
+              <input id="configBaseUrl" type="url" autocomplete="off" placeholder="https://redmine.example.com/" required />
+            </label>
+            <label>
+              <span>Proxy URL</span>
+              <input id="configProxyUrl" type="url" autocomplete="off" placeholder="http://127.0.0.1:8787" />
+            </label>
+            <label>
+              <span>API key</span>
+              <input id="configApiKey" type="password" autocomplete="off" />
+            </label>
+            <label>
+              <span>Basic user</span>
+              <input id="configBasicUsername" type="text" autocomplete="username" />
+            </label>
+            <label>
+              <span>Basic password</span>
+              <input id="configBasicPassword" type="password" autocomplete="current-password" />
+            </label>
+            <div class="config-actions">
+              <button class="secondary-button" id="clearConfig" type="button">Clear</button>
+              <button class="primary-button" type="submit">Save</button>
+            </div>
+          </form>
+        </section>
+
         <section class="view active" id="dashboardView" aria-label="Dashboard">
           <header class="page-header">
             <p class="eyebrow">Dashboard</p>
@@ -141,6 +180,7 @@
                     <th>No</th>
                     <th>ID</th>
                     <th>Project</th>
+                    <th>Tracker</th>
                     <th>Subject</th>
                     <th>Assignee</th>
                     <th>Status</th>
@@ -150,7 +190,7 @@
                   </tr>
                 </thead>
                 <tbody id="notStartedRows">
-                  <tr><td colspan="9" class="empty-cell">No matching issues.</td></tr>
+                  <tr><td colspan="10" class="empty-cell">No matching issues.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -170,7 +210,6 @@
                     <th>No</th>
                     <th>ID</th>
                     <th>Project</th>
-                    <th>Tracker</th>
                     <th>Subject</th>
                     <th>Assignee</th>
                     <th>Status</th>
@@ -181,9 +220,30 @@
                   </tr>
                 </thead>
                 <tbody id="processedRows">
-                  <tr><td colspan="11" class="empty-cell">No matching issues.</td></tr>
+                  <tr><td colspan="10" class="empty-cell">No matching issues.</td></tr>
                 </tbody>
               </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="dailyReportView" aria-label="Daily Report">
+          <header class="page-header">
+            <p class="eyebrow">Daily Report</p>
+          </header>
+
+          <section class="dashboard-list" aria-label="Daily report content">
+            <div class="list-heading">
+              <div>
+                <h2>Daily Report</h2>
+              </div>
+              <div class="list-actions">
+                <span id="dailyReportInfo">0 issue</span>
+                <button class="list-action-button" id="copyDailyReport" type="button" disabled>Copy</button>
+              </div>
+            </div>
+            <div class="daily-report-box" id="dailyReportContent">
+              Load data to generate daily report.
             </div>
           </section>
         </section>
@@ -221,9 +281,9 @@
           </section>
         </section>
 
-        <section class="view" id="reportView" aria-label="Report">
+        <section class="view" id="reportView" aria-label="Weekly Report">
           <header class="page-header">
-            <p class="eyebrow">Report</p>
+            <p class="eyebrow">Weekly Report</p>
           </header>
 
           <section class="dashboard-list" aria-label="Last week ticket list for Team C#">
@@ -380,8 +440,9 @@
       </section>
     </main>
 
-    <script src="./config.js?v=20260605-1"></script>
-    <script src="./vendor/xlsx.full.min.js?v=20260605-1"></script>
-    <script src="./app.js?v=20260605-1"></script>
+    <script src="./config.example.js?v=20260608-9"></script>
+    <script src="./config.js?v=local"></script>
+    <script src="./vendor/xlsx.full.min.js?v=20260608-8"></script>
+    <script src="./app.js?v=20260608-9"></script>
   </body>
 </html>

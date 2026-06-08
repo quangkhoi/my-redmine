@@ -1,4 +1,26 @@
-const config = window.REDMINE_CONFIG || {};
+const DEFAULT_CONFIG = {
+  baseUrl: "https://redmine.wdm.co.jp/",
+  proxyUrl: "",
+  apiKey: "",
+  basicAuth: {
+    username: "",
+    password: "",
+  },
+  statuses: {
+    processing: "処理中",
+    notStarted: "未対応",
+    processed: "処理済み",
+  },
+  statusIds: {
+    processing: 2,
+    notStarted: 1,
+    processed: 3,
+  },
+  allowedLogins: ["duydinh", "khoiduong@freec.asia", "namtran", "tuyennguyen", "phihoang1994", "260618"],
+  allowedAssigneeIds: [106, 114, 94, 113, 99, 123],
+};
+const CONFIG_STORAGE_KEY = "redmine-dashboard-config";
+let config = buildRuntimeConfig();
 
 const STATUS_NAMES = {
   processing: (config.statuses && config.statuses.processing) || "処理中",
@@ -15,16 +37,40 @@ const WORK_ITEM_STATUS_NAMES = new Set([
 
 const MY_TASK_EXCLUDED_STATUS_NAMES = new Set(["完了（中止）", "完了（保留）", "完了"]);
 const RELEASE_TARGET_FIELD_NAME = "リリース対象";
+const RELEASE_TARGET_VALUE_NAMES = new Map([
+  ["36", "ESP"],
+  ["40", "WEB"],
+  ["41", ".env"],
+  ["37", "バッチ"],
+  ["39", "DB"],
+]);
+const DAILY_REPORT_ASSIGNEES = [
+  { id: 94, name: "Nam" },
+  { id: 99, name: "Tuyen" },
+  { id: 106, name: "Duy" },
+  { id: 123, name: "Phi" },
+];
+const CIRCLED_NUMBERS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "⑪", "⑫", "⑬", "⑭", "⑮"];
 
 const els = {
   appLayout: document.querySelector(".app-layout"),
   collapseSidebar: document.querySelector("#collapseSidebar"),
   expandSidebar: document.querySelector("#expandSidebar"),
   loadDashboard: document.querySelector("#loadDashboard"),
+  loadDailyReport: document.querySelector("#loadDailyReport"),
+  copyDailyReport: document.querySelector("#copyDailyReport"),
   loadMyTask: document.querySelector("#loadMyTask"),
   loadReport: document.querySelector("#loadReport"),
   exportReport: document.querySelector("#exportReport"),
   loadLoginTime: document.querySelector("#loadLoginTime"),
+  configPanel: document.querySelector("#configPanel"),
+  configForm: document.querySelector("#configForm"),
+  configBaseUrl: document.querySelector("#configBaseUrl"),
+  configProxyUrl: document.querySelector("#configProxyUrl"),
+  configApiKey: document.querySelector("#configApiKey"),
+  configBasicUsername: document.querySelector("#configBasicUsername"),
+  configBasicPassword: document.querySelector("#configBasicPassword"),
+  clearConfig: document.querySelector("#clearConfig"),
   myTaskUserId: document.querySelector("#myTaskUserId"),
   myTaskStartDate: document.querySelector("#myTaskStartDate"),
   myTaskEndDate: document.querySelector("#myTaskEndDate"),
@@ -68,6 +114,8 @@ const els = {
   processingRows: document.querySelector("#processingRows"),
   notStartedRows: document.querySelector("#notStartedRows"),
   processedRows: document.querySelector("#processedRows"),
+  dailyReportInfo: document.querySelector("#dailyReportInfo"),
+  dailyReportContent: document.querySelector("#dailyReportContent"),
   navGroups: document.querySelectorAll(".nav-group"),
   navItems: document.querySelectorAll(".nav-item"),
   views: document.querySelectorAll(".view"),
@@ -80,6 +128,8 @@ let loadedReportLists = null;
 let releaseTargetValueNames = new Map();
 
 function init() {
+  renderConfigForm();
+  renderConfigPanel();
   renderMyTaskControls();
   renderReportControls();
   renderLoginTimeControls();
@@ -95,10 +145,14 @@ function bindEvents() {
   els.collapseSidebar.addEventListener("click", collapseSidebar);
   els.expandSidebar.addEventListener("click", expandSidebar);
   els.loadDashboard.addEventListener("click", loadDashboard);
+  els.loadDailyReport.addEventListener("click", loadDailyReport);
+  els.copyDailyReport.addEventListener("click", copyDailyReport);
   els.loadMyTask.addEventListener("click", loadMyTask);
   els.loadReport.addEventListener("click", loadReport);
   els.exportReport.addEventListener("click", exportReport);
   els.loadLoginTime.addEventListener("click", loadLoginTime);
+  els.configForm.addEventListener("submit", saveRuntimeConfig);
+  els.clearConfig.addEventListener("click", clearRuntimeConfig);
   els.toggleLoginTimeUser114.addEventListener("click", toggleLoginTimeUser114Rows);
   els.myTaskStartDate.addEventListener("change", renderMyTaskConditions);
   els.myTaskEndDate.addEventListener("change", renderMyTaskConditions);
@@ -108,6 +162,91 @@ function bindEvents() {
   els.navItems.forEach((item) => {
     item.addEventListener("click", () => switchView(item.dataset.view));
   });
+}
+
+function buildRuntimeConfig() {
+  return mergeConfig(DEFAULT_CONFIG, window.REDMINE_CONFIG || {}, readStoredConfig());
+}
+
+function mergeConfig(...sources) {
+  return sources.reduce((merged, source) => {
+    const next = source || {};
+    return Object.assign({}, merged, next, {
+      basicAuth: Object.assign({}, merged.basicAuth || {}, next.basicAuth || {}),
+      statuses: Object.assign({}, merged.statuses || {}, next.statuses || {}),
+      statusIds: Object.assign({}, merged.statusIds || {}, next.statusIds || {}),
+    });
+  }, {});
+}
+
+function readStoredConfig() {
+  try {
+    return JSON.parse(sessionStorage.getItem(CONFIG_STORAGE_KEY) || "{}");
+  } catch (error) {
+    return {};
+  }
+}
+
+function renderConfigForm() {
+  els.configBaseUrl.value = config.baseUrl || "";
+  els.configProxyUrl.value = config.proxyUrl || "";
+  els.configApiKey.value = config.apiKey || "";
+  els.configBasicUsername.value = (config.basicAuth && config.basicAuth.username) || "";
+  els.configBasicPassword.value = (config.basicAuth && config.basicAuth.password) || "";
+}
+
+function renderConfigPanel() {
+  const isReady = hasRuntimeConfig();
+  els.configPanel.classList.toggle("is-configured", isReady);
+  els.configPanel.querySelector(".config-state").textContent = isReady
+    ? "Configured for this browser session."
+    : "Enter a local proxy URL or Redmine credentials before loading data.";
+}
+
+function saveRuntimeConfig(event) {
+  event.preventDefault();
+
+  const nextConfig = {
+    baseUrl: els.configBaseUrl.value.trim(),
+    proxyUrl: els.configProxyUrl.value.trim(),
+    apiKey: els.configApiKey.value.trim(),
+    basicAuth: {
+      username: els.configBasicUsername.value.trim(),
+      password: els.configBasicPassword.value,
+    },
+  };
+
+  sessionStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(nextConfig));
+  config = buildRuntimeConfig();
+  allowedAssigneeIds = new Set((config.allowedAssigneeIds || []).map(Number).filter(Boolean));
+  renderConfigPanel();
+  setStatus("Saved Redmine configuration for this browser session.", "ok");
+}
+
+function clearRuntimeConfig() {
+  sessionStorage.removeItem(CONFIG_STORAGE_KEY);
+  config = buildRuntimeConfig();
+  renderConfigForm();
+  renderConfigPanel();
+  setStatus("Cleared browser session configuration.", "ok");
+}
+
+function hasRuntimeConfig() {
+  const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
+  if (!apiBaseUrl) {
+    return false;
+  }
+  if (normalizeBaseUrl(config.proxyUrl || "")) {
+    return true;
+  }
+  return Boolean((config.apiKey || "").trim() || buildBasicAuthHeader());
+}
+
+function requireRuntimeConfig() {
+  if (!hasRuntimeConfig()) {
+    renderConfigPanel();
+    throw new Error("Enter Redmine configuration before loading data.");
+  }
 }
 
 function collapseSidebar() {
@@ -150,7 +289,13 @@ function switchView(viewName) {
   els.views.forEach((view) => view.classList.remove("active"));
 
   const targetId =
-    viewName === "login-time" ? "loginTimeView" : viewName === "my-task" ? "myTaskView" : `${viewName}View`;
+    viewName === "login-time"
+      ? "loginTimeView"
+      : viewName === "my-task"
+      ? "myTaskView"
+      : viewName === "daily-report"
+      ? "dailyReportView"
+      : `${viewName}View`;
   const target = document.querySelector(`#${targetId}`);
   if (target) {
     target.classList.add("active");
@@ -225,6 +370,7 @@ function renderInitialEmptyLists() {
   renderList("processing", []);
   renderList("notStarted", []);
   renderList("processed", []);
+  renderDailyReport([]);
   renderMyTaskList([]);
   renderReportList("reportPrevCsharp", []);
   renderReportList("reportPrevWeb", []);
@@ -234,10 +380,9 @@ function renderInitialEmptyLists() {
 }
 
 function renderDashboardLoading() {
-  [els.processingRows, els.notStartedRows].forEach((target) => {
-    target.innerHTML = '<tr><td colspan="9" class="empty-cell">Loading data...</td></tr>';
-  });
-  els.processedRows.innerHTML = '<tr><td colspan="11" class="empty-cell">Loading data...</td></tr>';
+  els.processingRows.innerHTML = '<tr><td colspan="9" class="empty-cell">Loading data...</td></tr>';
+  els.notStartedRows.innerHTML = '<tr><td colspan="10" class="empty-cell">Loading data...</td></tr>';
+  els.processedRows.innerHTML = '<tr><td colspan="10" class="empty-cell">Loading data...</td></tr>';
 }
 
 function renderMyTaskLoading() {
@@ -264,6 +409,7 @@ async function loadDashboard() {
   renderDashboardLoading();
 
   try {
+    requireRuntimeConfig();
     allowedAssigneeIds = new Set((config.allowedAssigneeIds || []).map(Number).filter(Boolean));
     if (!allowedAssigneeIds.size) {
       throw new Error("Please configure allowedAssigneeIds in config.js.");
@@ -292,6 +438,7 @@ async function loadMyTask() {
   renderMyTaskLoading();
 
   try {
+    requireRuntimeConfig();
     renderMyTaskConditions();
     const issues = await fetchMyTaskIssues();
     renderMyTaskList(issues);
@@ -305,6 +452,59 @@ async function loadMyTask() {
   }
 }
 
+async function loadDailyReport() {
+  switchView("daily-report");
+  setStatus("Loading daily report data...");
+  beginGlobalLoading();
+  els.loadDailyReport.disabled = true;
+  els.copyDailyReport.disabled = true;
+  els.dailyReportContent.textContent = "Loading data...";
+
+  try {
+    requireRuntimeConfig();
+    const issues = await fetchDailyReportIssues();
+    renderDailyReport(issues, true);
+    setStatus(`Loaded ${issues.length} daily report issues from Redmine.`, "ok");
+  } catch (error) {
+    renderDailyReportError(error.message);
+    setStatus("Could not load daily report", "error");
+  } finally {
+    els.loadDailyReport.disabled = false;
+    endGlobalLoading();
+  }
+}
+
+async function copyDailyReport() {
+  const html = `<div style="white-space: pre-wrap; font-family: sans-serif;">${els.dailyReportContent.innerHTML}</div>`;
+  const text = buildDailyReportClipboardText();
+
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([
+        new window.ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([text], { type: "text/plain" }),
+        }),
+      ]);
+    } else if (copyDailyReportSelection()) {
+      setStatus("Copied daily report for Slack.", "ok");
+      return;
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      copyTextWithTextarea(text);
+    }
+    setStatus("Copied daily report for Slack.", "ok");
+  } catch (error) {
+    if (copyDailyReportSelection()) {
+      setStatus("Copied daily report for Slack.", "ok");
+    } else {
+      copyTextWithTextarea(text);
+      setStatus("Copied daily report as plain text.", "ok");
+    }
+  }
+}
+
 async function loadReport() {
   switchView("report");
   setStatus("Loading report data...");
@@ -314,6 +514,7 @@ async function loadReport() {
   renderReportLoading();
 
   try {
+    requireRuntimeConfig();
     renderReportConditions();
     const lists = await fetchReportLists();
     loadedReportLists = lists;
@@ -363,6 +564,7 @@ async function loadLoginTime() {
   renderLoginTimeLoading();
 
   try {
+    requireRuntimeConfig();
     allowedAssigneeIds = new Set((config.allowedAssigneeIds || []).map(Number).filter(Boolean));
     if (!allowedAssigneeIds.size) {
       throw new Error("Please configure allowedAssigneeIds in config.js.");
@@ -537,9 +739,35 @@ async function fetchDashboardLists() {
 
   return {
     processing: sortIssues(processing),
-    notStarted: sortIssues(notStarted.filter((issue) => !isExcludedNotStartedIssue(issue))),
+    notStarted: sortNotStartedIssues(notStarted),
     processed: sortIssuesDescending(processed.filter((issue) => Number(issue.done_ratio) !== 100)),
   };
+}
+
+async function fetchDailyReportIssues() {
+  const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
+  if (!apiBaseUrl) {
+    throw new Error("Please configure the API URL in config.js.");
+  }
+
+  const today = startOfDay(new Date());
+  const statusIds = await fetchStatusIds();
+  const assigneeIds = DAILY_REPORT_ASSIGNEES.map((item) => item.id);
+  const [todayIssues, processingIssues] = await Promise.all([
+    fetchIssuesForAssigneeIds(assigneeIds, {
+      statusId: "*",
+      startDateFrom: today,
+      startDateTo: today,
+    }),
+    fetchIssuesForAssigneeIds(assigneeIds, {
+      statusId: statusIds.processing,
+    }),
+  ]);
+
+  const filteredTodayIssues = todayIssues.filter((issue) => Number(issue.assigned_to && issue.assigned_to.id) !== 114);
+  const filteredProcessingIssues = processingIssues.filter((issue) => Number(issue.done_ratio) < 90);
+
+  return sortIssues(uniqueIssues(filteredTodayIssues.concat(filteredProcessingIssues)));
 }
 
 async function fetchMyTaskIssues() {
@@ -818,7 +1046,7 @@ async function safeFetch(url, options) {
     return await fetch(url, options);
   } catch (error) {
     throw new Error(
-      `Could not call the API at ${url.pathname}. Run start-proxy.bat in the redmine-dashboard folder, then load the data again.`
+      `Could not call the API at ${url.pathname}. Run start-proxy.bat in this app folder, then load the data again.`
     );
   }
 }
@@ -870,14 +1098,6 @@ function uniqueIssues(issues) {
     seen.add(issue.id);
     return true;
   });
-}
-
-function isExcludedNotStartedIssue(issue) {
-  return (
-    issue.tracker &&
-    issue.tracker.name === "デバッグ（修正）" &&
-    Number(issue.assigned_to && issue.assigned_to.id) === 114
-  );
 }
 
 function isLoginTimeIssue(issue) {
@@ -936,6 +1156,9 @@ function getCustomFieldItemDisplayValue(issue, item) {
   }
 
   const value = String(item);
+  if (RELEASE_TARGET_VALUE_NAMES.has(value)) {
+    return RELEASE_TARGET_VALUE_NAMES.get(value);
+  }
   if (releaseTargetValueNames.has(value)) {
     return releaseTargetValueNames.get(value);
   }
@@ -960,6 +1183,32 @@ function sortIssues(issues) {
 
     return Number(a.id || 0) - Number(b.id || 0);
   });
+}
+
+function sortNotStartedIssues(issues) {
+  return issues.slice().sort((a, b) => {
+    const trackerDiff = getNotStartedTrackerRank(a) - getNotStartedTrackerRank(b);
+    if (trackerDiff !== 0) return trackerDiff;
+
+    const trackerNameDiff = getTrackerName(a).localeCompare(getTrackerName(b), "ja");
+    if (trackerNameDiff !== 0) return trackerNameDiff;
+
+    const startDiff = compareDate(a.start_date, b.start_date);
+    if (startDiff !== 0) return startDiff;
+
+    const dueDiff = compareDate(a.due_date, b.due_date);
+    if (dueDiff !== 0) return dueDiff;
+
+    return Number(a.id || 0) - Number(b.id || 0);
+  });
+}
+
+function getNotStartedTrackerRank(issue) {
+  return getTrackerName(issue) === "開発" ? 0 : 1;
+}
+
+function getTrackerName(issue) {
+  return ((issue.tracker && issue.tracker.name) || "").trim();
 }
 
 function sortIssuesDescending(issues) {
@@ -1155,11 +1404,17 @@ function renderList(name, issues) {
   infoEl.textContent = `${issues.length} issue`;
 
   if (!issues.length) {
-    rowsEl.innerHTML = `<tr><td colspan="${name === "processed" ? 11 : 9}" class="empty-cell">No matching issues.</td></tr>`;
+    const colspan = name === "processing" ? 9 : 10;
+    rowsEl.innerHTML = `<tr><td colspan="${colspan}" class="empty-cell">No matching issues.</td></tr>`;
     return;
   }
 
-  rowsEl.innerHTML = issues.map(name === "processed" ? processedIssueRow : issueRow).join("");
+  const rowRendererByList = {
+    processing: issueRow,
+    notStarted: notStartedIssueRow,
+    processed: processedIssueRow,
+  };
+  rowsEl.innerHTML = issues.map(rowRendererByList[name]).join("");
 }
 
 function renderMyTaskList(issues) {
@@ -1171,6 +1426,95 @@ function renderMyTaskList(issues) {
   }
 
   els.myTaskRows.innerHTML = issues.map(myTaskRow).join("");
+}
+
+function renderDailyReport(issues, isLoaded = false) {
+  const groupedIssues = groupDailyReportIssues(issues);
+  els.dailyReportInfo.textContent = `${issues.length} issue`;
+  els.dailyReportContent.innerHTML = buildDailyReportHtml(groupedIssues);
+  els.copyDailyReport.disabled = !isLoaded;
+}
+
+function groupDailyReportIssues(issues) {
+  const groups = new Map(DAILY_REPORT_ASSIGNEES.map((assignee) => [assignee.id, []]));
+
+  issues.forEach((issue) => {
+    const assigneeId = Number(issue.assigned_to && issue.assigned_to.id);
+    if (groups.has(assigneeId)) {
+      groups.get(assigneeId).push(issue);
+    }
+  });
+
+  groups.forEach((items, assigneeId) => {
+    groups.set(assigneeId, sortIssues(items));
+  });
+
+  return groups;
+}
+
+function buildDailyReportHtml(groupedIssues) {
+  const today = new Date();
+  const lines = [
+    "お疲れ様です。",
+    `${today.getMonth() + 1}月${today.getDate()}日の対応予定を報告いたします。`,
+    "",
+  ];
+
+  DAILY_REPORT_ASSIGNEES.forEach((assignee, assigneeIndex) => {
+    lines.push(`■${escapeHtml(assignee.name)}`);
+    const issues = groupedIssues.get(assignee.id) || [];
+
+    issues.forEach((issue, index) => {
+      const number = CIRCLED_NUMBERS[index] || `${index + 1}.`;
+      lines.push(
+        `${number}<a href="${escapeAttr(getIssueUrl(issue))}" target="_blank" rel="noreferrer">${escapeHtml(
+          issue.subject || "-"
+        )} - ${escapeHtml((issue.project && issue.project.name) || "-")}</a>`
+      );
+    });
+
+    if (assigneeIndex < DAILY_REPORT_ASSIGNEES.length - 1) {
+      lines.push("");
+    }
+  });
+
+  return lines.join("\n");
+}
+
+function buildDailyReportClipboardText() {
+  const clone = els.dailyReportContent.cloneNode(true);
+  clone.querySelectorAll("a").forEach((link) => {
+    link.textContent = `${link.textContent} ${link.href}`;
+  });
+  return clone.innerText;
+}
+
+function copyTextWithTextarea(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
+function copyDailyReportSelection() {
+  const selection = window.getSelection && window.getSelection();
+  const range = document.createRange();
+
+  if (!selection || !range.selectNodeContents) {
+    return false;
+  }
+
+  selection.removeAllRanges();
+  range.selectNodeContents(els.dailyReportContent);
+  selection.addRange(range);
+  const copied = document.execCommand("copy");
+  selection.removeAllRanges();
+  return copied;
 }
 
 function renderLoginTimeList(issues) {
@@ -1211,13 +1555,41 @@ function renderReportList(name, issues) {
   rowsEl.innerHTML = issues.map(reportIssueRow).join("");
 }
 
-function issueRow(issue, index) {
+function getIssueUrl(issue) {
   const baseUrl = normalizeBaseUrl(config.baseUrl || "");
-  const issueUrl = baseUrl ? `${baseUrl}/issues/${issue.id}` : "#";
+  return baseUrl && issue && issue.id ? `${baseUrl}/issues/${issue.id}` : "#";
+}
+
+function issueRow(issue, index) {
+  const issueUrl = getIssueUrl(issue);
   const done = Math.max(0, Math.min(100, Number(issue.done_ratio) || 0));
+  const rowClass = getDashboardIssueHighlightClass(issue, { checkFutureStart: false });
 
   return `
-    <tr>
+    <tr class="${rowClass}">
+      <td>${index + 1}</td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
+      <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
+      <td>${escapeHtml(issue.subject || "-")}</td>
+      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
+      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${escapeHtml(formatDate(issue.start_date))}</td>
+      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
+      <td>
+        ${done}%
+        <div class="done-bar" aria-hidden="true"><span style="width: ${done}%"></span></div>
+      </td>
+    </tr>
+  `;
+}
+
+function notStartedIssueRow(issue, index) {
+  const issueUrl = getIssueUrl(issue);
+  const done = Math.max(0, Math.min(100, Number(issue.done_ratio) || 0));
+  const rowClass = getDashboardIssueHighlightClass(issue, { checkFutureStart: true });
+
+  return `
+    <tr class="${rowClass}">
       <td>${index + 1}</td>
       <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
       <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
@@ -1235,9 +1607,56 @@ function issueRow(issue, index) {
   `;
 }
 
+function getDashboardIssueHighlightClass(issue, options) {
+  const checkFutureStart = options && options.checkFutureStart;
+
+  if (isDueToday(issue) || (checkFutureStart && isFutureDevelopmentIssue(issue))) {
+    return "issue-row-danger";
+  }
+
+  if (checkFutureStart && isStartDateBeyondDashboardThreshold(issue)) {
+    return "issue-row-success";
+  }
+
+  return "";
+}
+
+function isDueToday(issue) {
+  return isSameDate(issue.due_date, new Date());
+}
+
+function isFutureDevelopmentIssue(issue) {
+  return getTrackerName(issue) === "開発" && isDateAfter(issue.start_date, new Date());
+}
+
+function isStartDateBeyondDashboardThreshold(issue) {
+  if (!issue.start_date) {
+    return false;
+  }
+
+  const today = startOfDay(new Date());
+  const startDate = startOfDay(issue.start_date);
+  const diffDays = Math.floor((startDate.getTime() - today.getTime()) / 86400000);
+  const thresholdDays = today.getDay() === 5 ? 3 : 1;
+  return diffDays > thresholdDays;
+}
+
+function isDateAfter(value, target) {
+  if (!value) {
+    return false;
+  }
+  return startOfDay(value).getTime() > startOfDay(target).getTime();
+}
+
+function isSameDate(value, target) {
+  if (!value || !target) {
+    return false;
+  }
+  return startOfDay(value).getTime() === startOfDay(target).getTime();
+}
+
 function processedIssueRow(issue, index) {
-  const baseUrl = normalizeBaseUrl(config.baseUrl || "");
-  const issueUrl = baseUrl ? `${baseUrl}/issues/${issue.id}` : "#";
+  const issueUrl = getIssueUrl(issue);
   const done = Math.max(0, Math.min(100, Number(issue.done_ratio) || 0));
 
   return `
@@ -1260,8 +1679,7 @@ function processedIssueRow(issue, index) {
 }
 
 function reportIssueRow(issue, index) {
-  const baseUrl = normalizeBaseUrl(config.baseUrl || "");
-  const issueUrl = baseUrl ? `${baseUrl}/issues/${issue.id}` : "#";
+  const issueUrl = getIssueUrl(issue);
 
   return `
     <tr>
@@ -1278,8 +1696,7 @@ function reportIssueRow(issue, index) {
 }
 
 function myTaskRow(issue, index) {
-  const baseUrl = normalizeBaseUrl(config.baseUrl || "");
-  const issueUrl = baseUrl ? `${baseUrl}/issues/${issue.id}` : "#";
+  const issueUrl = getIssueUrl(issue);
 
   return `
     <tr>
@@ -1295,8 +1712,7 @@ function myTaskRow(issue, index) {
 }
 
 function loginTimeRow(issue, index) {
-  const baseUrl = normalizeBaseUrl(config.baseUrl || "");
-  const issueUrl = baseUrl ? `${baseUrl}/issues/${issue.id}` : "#";
+  const issueUrl = getIssueUrl(issue);
   const user114Flag = issue.hasUser114SpentTime ? "true" : "false";
 
   return `
@@ -1341,14 +1757,19 @@ function timeEntryDetail(entry, hasUser114SpentTime) {
 
 function renderError(message) {
   const safeMessage = escapeHtml(message);
-  [els.processingRows, els.notStartedRows].forEach((target) => {
-    target.innerHTML = `<tr><td colspan="9" class="empty-cell">${safeMessage}</td></tr>`;
-  });
-  els.processedRows.innerHTML = `<tr><td colspan="11" class="empty-cell">${safeMessage}</td></tr>`;
+  els.processingRows.innerHTML = `<tr><td colspan="9" class="empty-cell">${safeMessage}</td></tr>`;
+  els.notStartedRows.innerHTML = `<tr><td colspan="10" class="empty-cell">${safeMessage}</td></tr>`;
+  els.processedRows.innerHTML = `<tr><td colspan="10" class="empty-cell">${safeMessage}</td></tr>`;
 }
 
 function renderMyTaskError(message) {
   els.myTaskRows.innerHTML = `<tr><td colspan="7" class="empty-cell">${escapeHtml(message)}</td></tr>`;
+}
+
+function renderDailyReportError(message) {
+  els.dailyReportInfo.textContent = "0 issue";
+  els.dailyReportContent.textContent = message;
+  els.copyDailyReport.disabled = true;
 }
 
 function renderLoginTimeError(message) {

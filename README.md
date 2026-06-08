@@ -1,47 +1,76 @@
 # Redmine Dashboard
 
-Trang web tĩnh để lấy issue từ Redmine REST API và hiển thị theo 3 chức năng:
+Trang web tĩnh để lấy issue từ Redmine REST API và hiển thị theo các chức năng:
 
 - Dash board
-- Report
+- Daily Report
+- Weekly Report
+- My Task
 - Login time
 
 ## Cách chạy
 
-Chạy proxy local nhẹ để tránh CORS và thêm Basic Auth:
+Repo này có thể public trên GitHub Pages. Không commit API key, Basic Auth username/password hoặc file proxy thật.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File C:\workspace\redmine-dashboard\proxy.ps1
-```
-
-Hoặc chạy file:
+Mở GitHub Pages hoặc mở file local:
 
 ```text
-C:\workspace\redmine-dashboard\start-proxy.bat
+C:\workspace\my-redmine\index.html
+```
+
+Khi cần load data, nhập Redmine URL/API key/Basic Auth trong panel `Redmine Config`. Các giá trị này chỉ lưu trong `sessionStorage` của tab trình duyệt.
+
+Nếu Redmine chặn CORS, tạo proxy local từ file mẫu:
+
+```powershell
+Copy-Item C:\workspace\my-redmine\proxy.example.ps1 C:\workspace\my-redmine\proxy.ps1
+```
+
+Sửa `proxy.ps1` bằng credential thật, rồi chạy proxy local:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\workspace\my-redmine\proxy.ps1
+```
+
+Hoặc chạy file nếu `proxy.ps1` đã tồn tại:
+
+```text
+C:\workspace\my-redmine\start-proxy.bat
 ```
 
 Để nút `Chạy lại proxy` trong web tự gọi file proxy, chạy một lần:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File C:\workspace\redmine-dashboard\install-proxy-protocol.ps1
+powershell -ExecutionPolicy Bypass -File C:\workspace\my-redmine\install-proxy-protocol.ps1
 ```
 
 Sau đó mở file `index.html` bằng trình duyệt:
 
 ```text
-C:\workspace\redmine-dashboard\index.html
+C:\workspace\my-redmine\index.html
 ```
 
 Không cần cài server hoặc build tool.
 
 ## Cấu hình
 
-Sửa file `config.js` nếu cần đổi URL, API key, status hoặc danh sách login:
+`config.example.js` chứa cấu hình public không có secret. Nếu muốn dùng config local thay vì nhập trên UI, copy file mẫu:
+
+```powershell
+Copy-Item C:\workspace\my-redmine\config.example.js C:\workspace\my-redmine\config.js
+```
+
+Sau đó sửa `config.js` trên máy local:
 
 ```js
 window.REDMINE_CONFIG = {
   baseUrl: "https://redmine.wdm.co.jp/",
+  proxyUrl: "http://127.0.0.1:8787",
   apiKey: "your-api-key",
+  basicAuth: {
+    username: "your-basic-auth-user",
+    password: "your-basic-auth-password",
+  },
   statuses: {
     processing: "処理中",
     notStarted: "未対応",
@@ -57,7 +86,13 @@ window.REDMINE_CONFIG = {
 };
 ```
 
+`config.js` và `proxy.ps1` nằm trong `.gitignore`, không được push lên GitHub.
+
 `allowedAssigneeIds` dùng khi tài khoản API không có quyền đọc `/users.json` để tự map login sang user id.
+
+## GitHub Pages
+
+Trong GitHub repo, vào `Settings` > `Pages`, chọn source branch `master` và folder `/ (root)`. Page public sẽ mở được UI, nhưng không có credential trong source. Người dùng cần nhập credential trên panel `Redmine Config` hoặc chạy proxy local.
 
 ## Dash board
 

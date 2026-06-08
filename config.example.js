@@ -1,10 +1,10 @@
 window.REDMINE_CONFIG = {
   baseUrl: "https://redmine.wdm.co.jp/",
-  proxyUrl: "http://127.0.0.1:8787",
-  apiKey: "48451c36a76333adf1a36e4904f8813abede9ee2",
+  proxyUrl: "",
+  apiKey: "",
   basicAuth: {
-    username: "wdm",
-    password: "1123",
+    username: "",
+    password: "",
   },
   statuses: {
     processing: "処理中",

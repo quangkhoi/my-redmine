@@ -268,6 +268,78 @@ h2 {
   opacity: 0.72;
 }
 
+.secondary-button {
+  min-width: 86px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0 14px;
+}
+
+.secondary-button:hover {
+  background: var(--surface-soft);
+}
+
+.config-panel {
+  display: grid;
+  gap: 14px;
+  border: 1px solid #f0c989;
+  border-radius: 8px;
+  background: #fff9ed;
+  box-shadow: var(--shadow);
+  margin-bottom: 18px;
+  padding: 16px 18px;
+}
+
+.config-panel.is-configured {
+  border-color: #99d6c9;
+  background: #f3fbf8;
+}
+
+.config-state {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.config-form {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.config-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.config-form span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.config-form input {
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  padding: 0 10px;
+}
+
+.config-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -393,6 +465,30 @@ h2 {
   background: #e8f4f1;
 }
 
+.list-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.daily-report-box {
+  min-height: 360px;
+  padding: 18px;
+  white-space: pre-wrap;
+  font-family: "Yu Gothic", "Meiryo", "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.daily-report-box a {
+  color: var(--accent-dark);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.daily-report-box a:hover {
+  text-decoration: underline;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -424,6 +520,22 @@ td {
 
 tbody tr:hover {
   background: #f8fbfa;
+}
+
+.issue-row-success td {
+  background: #e8f6ef;
+}
+
+.issue-row-success:hover td {
+  background: #ddf1e7;
+}
+
+.issue-row-danger td {
+  background: #ffe8e5;
+}
+
+.issue-row-danger:hover td {
+  background: #ffdcd8;
 }
 
 .time-entry-detail-row td {
@@ -548,6 +660,14 @@ tbody tr:hover {
 
   .toolbar select {
     width: 100%;
+  }
+
+  .config-form {
+    grid-template-columns: 1fr;
+  }
+
+  .config-actions {
+    justify-content: flex-end;
   }
 }
 
