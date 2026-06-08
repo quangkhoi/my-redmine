@@ -1024,18 +1024,15 @@ async function redmineGet(url) {
 }
 
 async function safeFetch(url, options) {
-  if (isBlockedHttpProxyFromHttpsPage(url)) {
-    throw new Error(
-      "GitHub Pages runs on HTTPS and cannot call an HTTP local proxy such as http://127.0.0.1:8787. Use direct Redmine HTTPS if CORS allows it, or configure an HTTPS proxy endpoint."
-    );
+  const blockedHttpsMessage = getBlockedHttpFromHttpsPageMessage(url);
+  if (blockedHttpsMessage) {
+    throw new Error(blockedHttpsMessage);
   }
 
   try {
     return await fetch(url, options);
   } catch (error) {
-    throw new Error(
-      `Could not call the API at ${url.pathname}. Run start-proxy.bat in this app folder, then load the data again.`
-    );
+    throw new Error(getFetchFailureMessage(url));
   }
 }
 
@@ -1073,13 +1070,29 @@ function isProxyRequest(url) {
   return proxyUrl && url.toString().startsWith(proxyUrl);
 }
 
-function isBlockedHttpProxyFromHttpsPage(url) {
+function getBlockedHttpFromHttpsPageMessage(url) {
   if (window.location.protocol !== "https:" || url.protocol !== "http:") {
-    return false;
+    return "";
   }
 
   const host = url.hostname.toLowerCase();
-  return host === "127.0.0.1" || host === "localhost" || host === "::1";
+  if (host === "127.0.0.1" || host === "localhost" || host === "::1") {
+    return "GitHub Pages runs on HTTPS and cannot call a local HTTP proxy such as http://127.0.0.1:8787. Open this app from the local file instead, or configure an HTTPS proxy endpoint.";
+  }
+
+  return "GitHub Pages runs on HTTPS and cannot call an HTTP API/proxy. Use an HTTPS Redmine URL or an HTTPS proxy endpoint.";
+}
+
+function getFetchFailureMessage(url) {
+  if (window.location.protocol === "https:" && !isProxyRequest(url)) {
+    return `The browser could not call ${url.pathname} from GitHub Pages. Redmine likely does not allow CORS from this page. Use an HTTPS proxy endpoint, or open this app locally with start-proxy.bat.`;
+  }
+
+  if (isProxyRequest(url)) {
+    return `Could not call the configured proxy at ${url.pathname}. Check that the proxy URL is reachable from this page and uses HTTPS when running on GitHub Pages.`;
+  }
+
+  return `Could not call the API at ${url.pathname}. If you are opening this app locally, run start-proxy.bat and load the data again.`;
 }
 
 function isConfiguredProxyBlocked() {
@@ -1089,7 +1102,7 @@ function isConfiguredProxyBlocked() {
   }
 
   try {
-    return isBlockedHttpProxyFromHttpsPage(new URL(proxyUrl));
+    return Boolean(getBlockedHttpFromHttpsPageMessage(new URL(proxyUrl)));
   } catch (error) {
     return false;
   }
