@@ -572,11 +572,12 @@ async function fetchReportLists() {
   const ranges = getReportDateRanges();
   const reportStartDate = getSelectedReportStartDate();
   validateReportStartDate(reportStartDate, ranges.current.monday);
+  const prevCsharpAssigneeIds = [106, 94, 99];
   const csharpAssigneeIds = [106, 94, 99, 123];
   const webAssigneeIds = [123];
 
   const [prevCsharp, prevWeb, currentCsharp, currentWeb] = await Promise.all([
-    fetchReportList({ assigneeIds: csharpAssigneeIds, range: ranges.previous, dueDateFrom: reportStartDate }),
+    fetchReportList({ assigneeIds: prevCsharpAssigneeIds, range: ranges.previous, dueDateFrom: reportStartDate }),
     fetchReportList({ assigneeIds: webAssigneeIds, range: ranges.previous, dueDateFrom: reportStartDate }),
     fetchReportList({ assigneeIds: csharpAssigneeIds, range: ranges.current }),
     fetchReportList({ assigneeIds: webAssigneeIds, range: ranges.current }),
