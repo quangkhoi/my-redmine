@@ -1576,7 +1576,7 @@ function getIssueUrl(issue) {
 function issueRow(issue, index) {
   const issueUrl = getIssueUrl(issue);
   const done = Math.max(0, Math.min(100, Number(issue.done_ratio) || 0));
-  const rowClass = getDashboardIssueHighlightClass(issue, { checkFutureStart: false });
+  const rowClass = getProcessingIssueHighlightClass(issue);
 
   return `
     <tr class="${rowClass}">
@@ -1599,7 +1599,7 @@ function issueRow(issue, index) {
 function notStartedIssueRow(issue, index) {
   const issueUrl = getIssueUrl(issue);
   const done = Math.max(0, Math.min(100, Number(issue.done_ratio) || 0));
-  const rowClass = getDashboardIssueHighlightClass(issue, { checkFutureStart: true });
+  const rowClass = getNotStartedIssueHighlightClass(issue);
 
   return `
     <tr class="${rowClass}">
@@ -1620,26 +1620,48 @@ function notStartedIssueRow(issue, index) {
   `;
 }
 
-function getDashboardIssueHighlightClass(issue, options) {
-  const checkFutureStart = options && options.checkFutureStart;
+function getProcessingIssueHighlightClass(issue) {
+  return isDueTodayOrPast(issue) ? "issue-row-danger" : "";
+}
 
-  if (isDueToday(issue) || (checkFutureStart && isFutureDevelopmentIssue(issue))) {
+function getNotStartedIssueHighlightClass(issue) {
+  if (isStartToday(issue) || isPastDevelopmentIssue(issue)) {
     return "issue-row-danger";
   }
 
-  if (checkFutureStart && isStartDateBeyondDashboardThreshold(issue)) {
+  if (isStartDateBeyondDashboardThreshold(issue)) {
     return "issue-row-success";
   }
 
   return "";
 }
 
-function isDueToday(issue) {
-  return isSameDate(issue.due_date, new Date());
+function getTaskIssueHighlightClass(issue) {
+  if (isStatus(issue, STATUS_NAMES.processing)) {
+    return getProcessingIssueHighlightClass(issue);
+  }
+  if (isStatus(issue, STATUS_NAMES.notStarted)) {
+    return getNotStartedIssueHighlightClass(issue);
+  }
+  return "";
 }
 
-function isFutureDevelopmentIssue(issue) {
-  return getTrackerName(issue) === "開発" && isDateAfter(issue.start_date, new Date());
+function isDueTodayOrPast(issue) {
+  if (!issue.due_date) {
+    return false;
+  }
+  return startOfDay(issue.due_date).getTime() <= startOfDay(new Date()).getTime();
+}
+
+function isStartToday(issue) {
+  return isSameDate(issue.start_date, new Date());
+}
+
+function isPastDevelopmentIssue(issue) {
+  if (getTrackerName(issue) !== "開発" || !issue.start_date) {
+    return false;
+  }
+  return startOfDay(issue.start_date).getTime() < startOfDay(new Date()).getTime();
 }
 
 function isStartDateBeyondDashboardThreshold(issue) {
@@ -1652,13 +1674,6 @@ function isStartDateBeyondDashboardThreshold(issue) {
   const diffDays = Math.floor((startDate.getTime() - today.getTime()) / 86400000);
   const thresholdDays = today.getDay() === 5 ? 3 : 1;
   return diffDays > thresholdDays;
-}
-
-function isDateAfter(value, target) {
-  if (!value) {
-    return false;
-  }
-  return startOfDay(value).getTime() > startOfDay(target).getTime();
 }
 
 function isSameDate(value, target) {
@@ -1742,9 +1757,10 @@ function reportIssueRow(issue, index) {
 
 function myTaskRow(issue, index) {
   const issueUrl = getIssueUrl(issue);
+  const rowClass = getTaskIssueHighlightClass(issue);
 
   return `
-    <tr>
+    <tr class="${rowClass}">
       <td>${index + 1}</td>
       <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
       <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
