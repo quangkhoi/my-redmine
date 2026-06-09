@@ -71,6 +71,8 @@ const els = {
   configBasicUsername: document.querySelector("#configBasicUsername"),
   configBasicPassword: document.querySelector("#configBasicPassword"),
   clearConfig: document.querySelector("#clearConfig"),
+  dashboardStartDateFrom: document.querySelector("#dashboardStartDateFrom"),
+  dashboardStartDateTo: document.querySelector("#dashboardStartDateTo"),
   myTaskUserId: document.querySelector("#myTaskUserId"),
   myTaskStartDate: document.querySelector("#myTaskStartDate"),
   myTaskEndDate: document.querySelector("#myTaskEndDate"),
@@ -78,18 +80,17 @@ const els = {
   myTaskEndCondition: document.querySelector("#myTaskEndCondition"),
   myTaskInfo: document.querySelector("#myTaskInfo"),
   myTaskRows: document.querySelector("#myTaskRows"),
-  reportStartDate: document.querySelector("#reportStartDate"),
+  reportFromDate: document.querySelector("#reportFromDate"),
+  reportToDate: document.querySelector("#reportToDate"),
   reportRangeLabel: document.querySelector("#reportRangeLabel"),
   reportInfo: document.querySelector("#reportInfo"),
   reportRows: document.querySelector("#reportRows"),
   loginYear: document.querySelector("#loginYear"),
   loginMonth: document.querySelector("#loginMonth"),
-  loginStartCondition: document.querySelector("#loginStartCondition"),
-  loginDueCondition: document.querySelector("#loginDueCondition"),
+  loginTimeTitle: document.querySelector("#loginTimeTitle"),
   loginTimeInfo: document.querySelector("#loginTimeInfo"),
   toggleLoginTimeUser114: document.querySelector("#toggleLoginTimeUser114"),
   loginTimeRows: document.querySelector("#loginTimeRows"),
-  processingStartCondition: document.querySelector("#processingStartCondition"),
   notStartedStartCondition: document.querySelector("#notStartedStartCondition"),
   notStartedDueCondition: document.querySelector("#notStartedDueCondition"),
   processingCount: document.querySelector("#processingCount"),
@@ -117,6 +118,7 @@ let releaseTargetValueNames = new Map();
 function init() {
   renderConfigForm();
   renderConfigPanel();
+  renderDashboardControls();
   renderMyTaskControls();
   renderReportControls();
   renderLoginTimeControls();
@@ -140,12 +142,16 @@ function bindEvents() {
   els.loadLoginTime.addEventListener("click", loadLoginTime);
   els.configForm.addEventListener("submit", saveRuntimeConfig);
   els.clearConfig.addEventListener("click", clearRuntimeConfig);
-  els.toggleLoginTimeUser114.addEventListener("click", toggleLoginTimeUser114Rows);
+  els.toggleLoginTimeUser114.addEventListener("change", toggleLoginTimeUser114Rows);
+  els.dashboardStartDateFrom.addEventListener("change", renderListConditions);
+  els.dashboardStartDateTo.addEventListener("change", renderListConditions);
   els.myTaskStartDate.addEventListener("change", renderMyTaskConditions);
   els.myTaskEndDate.addEventListener("change", renderMyTaskConditions);
-  els.reportStartDate.addEventListener("change", renderReportConditions);
+  els.reportFromDate.addEventListener("change", renderReportConditions);
+  els.reportToDate.addEventListener("change", renderReportConditions);
   els.loginYear.addEventListener("change", renderLoginTimeConditions);
   els.loginMonth.addEventListener("change", renderLoginTimeConditions);
+  els.reportRows.addEventListener("change", handleReportSelectionChange);
   els.navItems.forEach((item) => {
     item.addEventListener("click", () => switchView(item.dataset.view));
   });
@@ -257,8 +263,12 @@ function expandSidebar() {
 }
 
 function toggleLoginTimeUser114Rows() {
-  hideLoginTimeUser114 = !hideLoginTimeUser114;
+  hideLoginTimeUser114 = els.toggleLoginTimeUser114.checked;
   applyLoginTimeUser114Filter();
+}
+
+function markLoadButtonAsReload(button) {
+  button.textContent = "Reload";
 }
 
 function beginGlobalLoading() {
@@ -302,10 +312,15 @@ function switchView(viewName) {
 }
 
 function renderListConditions() {
-  const range = getDashboardDateRange();
-  els.processingStartCondition.textContent = formatDate(range.lastMonday);
-  els.notStartedStartCondition.textContent = formatDate(range.lastMonday);
-  els.notStartedDueCondition.textContent = formatDate(range.nextFriday);
+  const range = getSelectedDashboardRange();
+  els.notStartedStartCondition.textContent = formatReportDate(range.startDate);
+  els.notStartedDueCondition.textContent = formatReportDate(range.endDate);
+}
+
+function renderDashboardControls() {
+  const range = getMyTaskDefaultRange();
+  els.dashboardStartDateFrom.value = formatInputDate(range.startDate);
+  els.dashboardStartDateTo.value = formatInputDate(range.endDate);
 }
 
 function renderMyTaskControls() {
@@ -316,16 +331,14 @@ function renderMyTaskControls() {
 
 function renderMyTaskConditions() {
   const range = getSelectedMyTaskRange();
-  els.myTaskStartCondition.textContent = formatDate(range.startDate);
-  els.myTaskEndCondition.textContent = formatDate(range.endDate);
+  els.myTaskStartCondition.textContent = formatReportDate(range.startDate);
+  els.myTaskEndCondition.textContent = formatReportDate(range.endDate);
 }
 
 function renderReportControls() {
   const ranges = getReportDateRanges();
-  const maxDate = new Date(ranges.current.monday);
-  maxDate.setDate(ranges.current.monday.getDate() - 1);
-  els.reportStartDate.value = formatInputDate(ranges.previous.monday);
-  els.reportStartDate.max = formatInputDate(maxDate);
+  els.reportFromDate.value = formatInputDate(ranges.previous.monday);
+  els.reportToDate.value = formatInputDate(ranges.current.friday);
 }
 
 function renderLoginTimeControls() {
@@ -348,14 +361,14 @@ function renderLoginTimeControls() {
 
 function renderLoginTimeConditions() {
   const range = getSelectedLoginMonthRange();
-  els.loginStartCondition.textContent = formatDate(range.monthEnd);
-  els.loginDueCondition.textContent = formatDate(range.monthStart);
+  els.loginTimeTitle.textContent = `Login time for ${range.year}/${pad2(range.month)}`;
 }
 
 function renderReportConditions() {
-  const ranges = getReportDateRanges();
-  const reportStartDate = getSelectedReportStartDate();
-  els.reportRangeLabel.textContent = `Report time: ${formatDate(reportStartDate)} ~ ${formatDate(ranges.current.friday)}`;
+  const range = getSelectedReportRange();
+  els.reportRangeLabel.textContent = `Report time: ${formatReportDate(range.from)} ~ ${formatReportDate(range.to)}`;
+  loadedReportLists = null;
+  els.exportReport.disabled = true;
 }
 
 function renderInitialEmptyLists() {
@@ -364,7 +377,7 @@ function renderInitialEmptyLists() {
   renderList("processed", []);
   renderDailyReport([]);
   renderMyTaskList([]);
-  renderReport({ prevCsharp: [], prevWeb: [], currentCsharp: [], currentWeb: [] }, 0);
+  renderReport({ prevCsharp: [], prevWeb: [], currentCsharp: [], currentWeb: [], hasPrevious: true }, 0);
   renderLoginTimeList([]);
 }
 
@@ -405,6 +418,7 @@ async function loadDashboard() {
     renderList("notStarted", lists.notStarted);
     renderList("processed", lists.processed);
     const total = lists.processing.length + lists.notStarted.length + lists.processed.length;
+    markLoadButtonAsReload(els.loadDashboard);
     setStatus(`Loaded ${total} issues from Redmine.`, "ok");
   } catch (error) {
     renderError(error.message);
@@ -427,6 +441,7 @@ async function loadMyTask() {
     renderMyTaskConditions();
     const issues = await fetchMyTaskIssues();
     renderMyTaskList(issues);
+    markLoadButtonAsReload(els.loadMyTask);
     setStatus(`Loaded ${issues.length} my task issues from Redmine.`, "ok");
   } catch (error) {
     renderMyTaskError(error.message);
@@ -449,6 +464,7 @@ async function loadDailyReport() {
     requireRuntimeConfig();
     const issues = await fetchDailyReportIssues();
     renderDailyReport(issues, true);
+    markLoadButtonAsReload(els.loadDailyReport);
     setStatus(`Loaded ${issues.length} daily report issues from Redmine.`, "ok");
   } catch (error) {
     renderDailyReportError(error.message);
@@ -504,9 +520,13 @@ async function loadReport() {
     const lists = await fetchReportLists();
     loadedReportLists = lists;
     const total =
-      lists.prevCsharp.length + lists.prevWeb.length + lists.currentCsharp.length + lists.currentWeb.length;
+      (lists.prevCsharp || []).length +
+      (lists.prevWeb || []).length +
+      (lists.currentCsharp || []).length +
+      (lists.currentWeb || []).length;
     renderReport(lists, total);
     els.exportReport.disabled = false;
+    markLoadButtonAsReload(els.loadReport);
     setStatus(`Loaded ${total} report issues from Redmine.`, "ok");
   } catch (error) {
     loadedReportLists = null;
@@ -527,14 +547,14 @@ function exportReport() {
     return;
   }
 
-  const ranges = getReportDateRanges();
-  const rangeLabel = formatMonthDayRange(ranges.previous.monday, ranges.previous.friday);
+  const selectedRange = loadedReportLists.range || getSelectedReportRange();
+  const rangeLabel = formatMonthDayRange(selectedRange.from, selectedRange.to);
   const sheetName = `Report (${rangeLabel})`;
-  const reportTitle = `週報（${formatJapaneseDateRange(ranges.previous.monday, ranges.previous.friday)}）`;
-  const sheet = buildReportSheet(loadedReportLists, reportTitle);
+  const reportTitle = `週報（${formatJapaneseDateRange(selectedRange.from, selectedRange.to)}）`;
+  const sheet = buildReportSheet(getSelectedReportLists(), reportTitle);
   const workbook = window.XLSX.utils.book_new();
   window.XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
-  window.XLSX.writeFile(workbook, `redmine-report_${formatTimestamp(new Date())}.xlsx`);
+  window.XLSX.writeFile(workbook, `WDM_Weekly_Report_${formatTimestamp(new Date())}.xlsx`);
   setStatus("Exported report Excel file.", "ok");
 }
 
@@ -554,7 +574,10 @@ async function loadLoginTime() {
 
     renderLoginTimeConditions();
     const issues = await fetchLoginTimeIssues();
+    hideLoginTimeUser114 = false;
+    els.toggleLoginTimeUser114.checked = false;
     renderLoginTimeList(issues);
+    markLoadButtonAsReload(els.loadLoginTime);
     setStatus(`Loaded ${issues.length} login time issues from Redmine.`, "ok");
   } catch (error) {
     renderLoginTimeError(error.message);
@@ -571,20 +594,32 @@ async function fetchReportLists() {
     throw new Error("Please configure the API URL in config.js.");
   }
 
-  const ranges = getReportDateRanges();
-  const reportStartDate = getSelectedReportStartDate();
-  validateReportStartDate(reportStartDate, ranges.current.monday);
+  const ranges = getSelectedReportRanges();
   const csharpAssigneeIds = [106, 94, 99];
   const webAssigneeIds = [123];
-
-  const [prevCsharp, prevWeb, currentCsharp, currentWeb] = await Promise.all([
-    fetchReportList({ assigneeIds: csharpAssigneeIds, range: ranges.previous, dueDateFrom: reportStartDate }),
-    fetchReportList({ assigneeIds: webAssigneeIds, range: ranges.previous, dueDateFrom: reportStartDate }),
+  const currentPromises = [
     fetchReportList({ assigneeIds: csharpAssigneeIds, range: ranges.current }),
     fetchReportList({ assigneeIds: webAssigneeIds, range: ranges.current }),
-  ]);
+  ];
+  const previousPromises = ranges.hasPrevious
+    ? [
+        fetchReportList({ assigneeIds: csharpAssigneeIds, range: ranges.previous }),
+        fetchReportList({ assigneeIds: webAssigneeIds, range: ranges.previous }),
+      ]
+    : [Promise.resolve([]), Promise.resolve([])];
 
-  return { prevCsharp, prevWeb, currentCsharp, currentWeb };
+  const [prevCsharp, prevWeb, currentCsharp, currentWeb] = await Promise.all(
+    previousPromises.concat(currentPromises)
+  );
+
+  return {
+    prevCsharp,
+    prevWeb,
+    currentCsharp,
+    currentWeb,
+    hasPrevious: ranges.hasPrevious,
+    range: ranges.selected,
+  };
 }
 
 async function fetchReportList({ assigneeIds, range, dueDateFrom }) {
@@ -645,7 +680,10 @@ function buildReportSheet(lists, reportTitle) {
         issue ? formatExcelDate(issue.start_date) : "",
         issue ? formatExcelDate(issue.due_date) : "",
       ];
-      values.forEach((value, colIndex) => setCell(row, colIndex + 1, value, 5));
+      values.forEach((value, colIndex) => {
+        const style = colIndex === 2 ? 7 : colIndex === 6 || colIndex === 7 ? 6 : 5;
+        setCell(row, colIndex + 1, value, style);
+      });
     });
     return startRow + exportIssues.length;
   }
@@ -666,8 +704,11 @@ function buildReportSheet(lists, reportTitle) {
   }
 
   setCell(1, 0, reportTitle, 1);
-  let nextRow = addTaskBlock(3, "■先週の作業", lists.prevCsharp || [], lists.prevWeb || []);
-  nextRow += 3;
+  let nextRow = 3;
+  if (lists.hasPrevious) {
+    nextRow = addTaskBlock(nextRow, "■先週の作業", lists.prevCsharp || [], lists.prevWeb || []);
+    nextRow += 3;
+  }
   addTaskBlock(nextRow, "◆今週の計画", lists.currentCsharp || [], lists.currentWeb || []);
 
   const sheet = window.XLSX.utils.aoa_to_sheet(rows);
@@ -678,20 +719,22 @@ function buildReportSheet(lists, reportTitle) {
     sheet[address].s = styles[address];
   });
   sheet["!merges"] = merges;
-  sheet["!cols"] = [
-    { wch: 4.5 },
-    { wch: 4.5 },
-    { wch: 18 },
-    { wch: 10 },
-    { wch: 40 },
-    { wch: 30 },
-    { wch: 10 },
-    { wch: 10 },
-    { wch: 10 },
-  ];
+  sheet["!cols"] = [4.5, 4.5, 18, 10, 45, 30, 10, 9.5, 9.5].map(reportColumnWidth);
   sheet["!rows"] = [];
   sheet["!rows"][1] = { hpt: 18 };
   return sheet;
+}
+
+function reportColumnWidth(wch) {
+  return {
+    wch,
+    width: convertCharsToExcelColumnWidth(wch),
+    customWidth: 1,
+  };
+}
+
+function convertCharsToExcelColumnWidth(wch) {
+  return Math.trunc(((wch * 7 + 5) / 7) * 256) / 256;
 }
 
 async function fetchDashboardLists() {
@@ -701,18 +744,18 @@ async function fetchDashboardLists() {
   }
 
   const statusIds = await fetchStatusIds();
-  const range = getDashboardDateRange();
+  const range = getSelectedDashboardRange();
+  validateDateRange(range.startDate, range.endDate);
   releaseTargetValueNames = await fetchCustomFieldValueNameMap(RELEASE_TARGET_FIELD_NAME).catch(() => new Map());
 
   const [processing, notStarted, processed] = await Promise.all([
     fetchIssuesForAssignees({
       statusId: statusIds.processing,
-      startDateFrom: range.lastMonday,
     }),
     fetchIssuesForAssignees({
       statusId: statusIds.notStarted,
-      startDateFrom: range.lastMonday,
-      dueDateTo: range.nextFriday,
+      startDateFrom: range.startDate,
+      startDateTo: range.endDate,
     }),
     fetchIssuesForAssignees({
       statusId: statusIds.processed,
@@ -720,7 +763,7 @@ async function fetchDashboardLists() {
   ]);
 
   return {
-    processing: sortIssues(processing),
+    processing: sortIssues(processing.filter((issue) => Number(issue.done_ratio) < 90)),
     notStarted: sortNotStartedIssues(notStarted),
     processed: sortIssuesDescending(processed.filter((issue) => Number(issue.done_ratio) !== 100)),
   };
@@ -1353,7 +1396,7 @@ function getSelectedLoginMonthRange() {
   const monthEnd = new Date(year, month, 0);
   monthStart.setHours(0, 0, 0, 0);
   monthEnd.setHours(0, 0, 0, 0);
-  return { monthStart, monthEnd };
+  return { year, month, monthStart, monthEnd };
 }
 
 function getSelectedMyTaskRange() {
@@ -1363,17 +1406,58 @@ function getSelectedMyTaskRange() {
   };
 }
 
-function getSelectedReportStartDate() {
-  return parseInputDate(els.reportStartDate.value);
+function getSelectedDashboardRange() {
+  return {
+    startDate: parseInputDate(els.dashboardStartDateFrom.value),
+    endDate: parseInputDate(els.dashboardStartDateTo.value),
+  };
 }
 
-function validateReportStartDate(startDate, currentMonday) {
-  if (!startDate) {
-    throw new Error("Please select report start date.");
+function getSelectedReportRange() {
+  return {
+    from: parseInputDate(els.reportFromDate.value),
+    to: parseInputDate(els.reportToDate.value),
+  };
+}
+
+function getSelectedReportRanges() {
+  const selected = getSelectedReportRange();
+  validateReportRange(selected);
+
+  const toWeekMonday = getMondayOfWeek(selected.to);
+  const previousFriday = new Date(toWeekMonday);
+  previousFriday.setDate(toWeekMonday.getDate() - 3);
+  const hasPrevious = selected.from.getTime() < toWeekMonday.getTime();
+
+  return {
+    selected,
+    hasPrevious,
+    previous: { monday: selected.from, friday: previousFriday },
+    current: { monday: toWeekMonday, friday: selected.to },
+  };
+}
+
+function validateReportRange(range) {
+  if (!range.from || !range.to) {
+    throw new Error("Please select both report From and To dates.");
   }
-  if (startDate.getTime() >= currentMonday.getTime()) {
-    throw new Error("Report start date must be before Monday of the current week.");
+  if (range.from.getDay() !== 1) {
+    throw new Error("Report From date must be Monday.");
   }
+  if (range.to.getDay() !== 5) {
+    throw new Error("Report To date must be Friday.");
+  }
+  if (range.from.getTime() >= range.to.getTime()) {
+    throw new Error("Report From date must be before To date.");
+  }
+}
+
+function getMondayOfWeek(value) {
+  const date = startOfDay(value);
+  const currentDay = date.getDay();
+  const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1;
+  date.setDate(date.getDate() - daysFromMonday);
+  return date;
 }
 
 function validateDateRange(startDate, endDate) {
@@ -1560,25 +1644,57 @@ function applyLoginTimeUser114Filter() {
     targetRows[index].hidden = hideLoginTimeUser114;
   }
 
-  els.toggleLoginTimeUser114.textContent = hideLoginTimeUser114 ? "Show time" : "Hide time";
-  els.toggleLoginTimeUser114.setAttribute("aria-pressed", String(hideLoginTimeUser114));
+  els.toggleLoginTimeUser114.checked = hideLoginTimeUser114;
 }
 
 function renderReport(lists, total) {
+  const previousRows = lists.hasPrevious
+    ? [
+        reportSectionRow("■先週の作業"),
+        reportTeamRow("C#開発"),
+        reportIssueRows("prevCsharp", lists.prevCsharp || []),
+        reportTeamRow("WEB開発"),
+        reportIssueRows("prevWeb", lists.prevWeb || []),
+        reportSpacerRow(),
+      ]
+    : [];
+
   els.reportInfo.textContent = `${total} issue`;
-  els.reportRows.innerHTML = [
-    reportSectionRow("■先週の作業"),
-    reportTeamRow("C#開発"),
-    reportIssueRows(lists.prevCsharp || []),
-    reportTeamRow("WEB開発"),
-    reportIssueRows(lists.prevWeb || []),
-    reportSpacerRow(),
+  els.reportRows.innerHTML = previousRows.concat([
     reportSectionRow("◆今週の計画"),
     reportTeamRow("C#開発"),
-    reportIssueRows(lists.currentCsharp || []),
+    reportIssueRows("currentCsharp", lists.currentCsharp || []),
     reportTeamRow("WEB開発"),
-    reportIssueRows(lists.currentWeb || []),
-  ].join("");
+    reportIssueRows("currentWeb", lists.currentWeb || []),
+  ]).join("");
+}
+
+function handleReportSelectionChange(event) {
+  const checkbox = event.target;
+  if (!checkbox.classList || !checkbox.classList.contains("report-row-checkbox")) {
+    return;
+  }
+
+  const row = checkbox.closest("tr");
+  if (row) {
+    row.classList.toggle("report-row-excluded", !checkbox.checked);
+  }
+}
+
+function getSelectedReportLists() {
+  const listNames = ["prevCsharp", "prevWeb", "currentCsharp", "currentWeb"];
+  const selectedLists = Object.assign({}, loadedReportLists);
+
+  listNames.forEach((listName) => {
+    const selectedIds = new Set(
+      Array.from(els.reportRows.querySelectorAll(`.report-row-checkbox[data-report-list="${listName}"]:checked`)).map(
+        (checkbox) => Number(checkbox.dataset.issueId)
+      )
+    );
+    selectedLists[listName] = (loadedReportLists[listName] || []).filter((issue) => selectedIds.has(Number(issue.id)));
+  });
+
+  return selectedLists;
 }
 
 function getIssueUrl(issue) {
@@ -1731,12 +1847,12 @@ function reportSpacerRow() {
   return '<tr class="report-spacer-row"><td colspan="8"></td></tr>';
 }
 
-function reportIssueRows(issues) {
+function reportIssueRows(listName, issues) {
   const exportIssues = issues.length ? issues : [null];
-  return exportIssues.map(reportIssueRow).join("");
+  return exportIssues.map((issue, index) => reportIssueRow(issue, index, listName)).join("");
 }
 
-function reportIssueRow(issue, index) {
+function reportIssueRow(issue, index, listName) {
   if (!issue) {
     return `
       <tr>
@@ -1755,12 +1871,19 @@ function reportIssueRow(issue, index) {
   const issueUrl = getIssueUrl(issue);
 
   return `
-    <tr>
-      <td>${index + 1}</td>
+    <tr data-report-list="${escapeAttr(listName)}" data-issue-id="${escapeAttr(issue.id)}">
+      <td>
+        <label class="report-selection-control">
+          <input class="report-row-checkbox" type="checkbox" data-report-list="${escapeAttr(listName)}" data-issue-id="${escapeAttr(
+    issue.id
+  )}" checked />
+          <span>${index + 1}</span>
+        </label>
+      </td>
       <td>${escapeHtml((issue.project && issue.project.name) || "")}</td>
       <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
       <td>${escapeHtml(issue.subject || "")}</td>
-      <td></td>
+      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "")}</td>
       <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
       <td>${escapeHtml(formatExcelDate(issue.start_date))}</td>
       <td>${escapeHtml(formatExcelDate(issue.due_date))}</td>
@@ -1879,6 +2002,14 @@ function formatDate(value) {
 function formatExcelDate(value) {
   if (!value) {
     return "";
+  }
+  const date = parseDateValue(value);
+  return `${date.getFullYear()}/${pad2(date.getMonth() + 1)}/${pad2(date.getDate())}`;
+}
+
+function formatReportDate(value) {
+  if (!value) {
+    return "-";
   }
   const date = parseDateValue(value);
   return `${date.getFullYear()}/${pad2(date.getMonth() + 1)}/${pad2(date.getDate())}`;

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Redmine Dashboard</title>
     <meta http-equiv="Cache-Control" content="no-store" />
-    <link rel="stylesheet" href="./styles.css?v=20260608-10" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260608-10" />
+    <link rel="stylesheet" href="./styles.css?v=20260609-6" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260609-6" />
   </head>
   <body>
     <main class="app-layout">
@@ -19,6 +19,17 @@
           <div class="nav-group active">
             <button class="nav-item active" type="button" data-view="dashboard">Dashboard</button>
             <div class="nav-panel">
+              <div class="sidebar-field">
+                <span>Start date</span>
+              </div>
+              <label class="sidebar-field">
+                <span>From</span>
+                <input id="dashboardStartDateFrom" type="date" />
+              </label>
+              <label class="sidebar-field">
+                <span>To</span>
+                <input id="dashboardStartDateTo" type="date" />
+              </label>
               <button class="sidebar-action" id="loadDashboard" type="button">Load data</button>
             </div>
           </div>
@@ -32,11 +43,14 @@
             <button class="nav-item" type="button" data-view="report">Weekly Report</button>
             <div class="nav-panel">
               <label class="sidebar-field">
-                <span>Start date</span>
-                <input id="reportStartDate" type="date" />
+                <span>From</span>
+                <input id="reportFromDate" type="date" />
+              </label>
+              <label class="sidebar-field">
+                <span>To</span>
+                <input id="reportToDate" type="date" />
               </label>
               <button class="sidebar-action" id="loadReport" type="button">Load data</button>
-              <button class="sidebar-action" id="exportReport" type="button" disabled>Export Excel</button>
             </div>
           </div>
           <div class="nav-group">
@@ -52,12 +66,15 @@
                   <option value="123">Phi Hoang</option>
                 </select>
               </label>
-              <label class="sidebar-field">
+              <div class="sidebar-field">
                 <span>Start date</span>
+              </div>
+              <label class="sidebar-field">
+                <span>From</span>
                 <input id="myTaskStartDate" type="date" />
               </label>
               <label class="sidebar-field">
-                <span>Start date to</span>
+                <span>To</span>
                 <input id="myTaskEndDate" type="date" />
               </label>
               <button class="sidebar-action" id="loadMyTask" type="button">Load data</button>
@@ -77,10 +94,12 @@
               <button class="sidebar-action" id="loadLoginTime" type="button">Load data</button>
             </div>
           </div>
+        </nav>
+        <div class="sidebar-footer">
           <div class="nav-group config-nav-group">
             <button class="nav-item" type="button" data-view="config">Redmine Config</button>
           </div>
-        </nav>
+        </div>
       </aside>
       <button class="collapsed-rail" id="expandSidebar" type="button" aria-controls="appSidebar" aria-label="Open sidebar">
         &gt;&gt;
@@ -151,7 +170,7 @@
           <section class="dashboard-list" aria-label="Processing issue list">
             <div class="list-heading">
               <div>
-                <h2>1. Processing (start date &gt;= <span id="processingStartCondition">-</span>)</h2>
+                <h2>Processing</h2>
               </div>
               <span id="processingInfo">0 issue</span>
             </div>
@@ -180,7 +199,7 @@
           <section class="dashboard-list" aria-label="Not started issue list">
             <div class="list-heading">
               <div>
-                <h2>2. Not started (start date &gt;= <span id="notStartedStartCondition">-</span>, due date &lt;= <span id="notStartedDueCondition">-</span>)</h2>
+                <h2>Not started (<span id="notStartedStartCondition">-</span>~<span id="notStartedDueCondition">-</span>)</h2>
               </div>
               <span id="notStartedInfo">0 issue</span>
             </div>
@@ -267,7 +286,7 @@
           <section class="dashboard-list" aria-label="My task issue list">
             <div class="list-heading">
               <div>
-                <h2>My Task (start date &gt;= <span id="myTaskStartCondition">-</span>, start date &lt;= <span id="myTaskEndCondition">-</span>)</h2>
+                <h2>Task from <span id="myTaskStartCondition">-</span> ~ <span id="myTaskEndCondition">-</span></h2>
               </div>
               <span id="myTaskInfo">0 issue</span>
             </div>
@@ -295,7 +314,10 @@
         <section class="view" id="reportView" aria-label="Weekly Report">
           <header class="page-header split-header">
             <p class="eyebrow">Weekly Report</p>
-            <span class="page-range" id="reportRangeLabel">Report time: -</span>
+            <div class="page-actions">
+              <span class="page-range" id="reportRangeLabel">Report time: -</span>
+              <button class="list-action-button" id="exportReport" type="button" disabled>Export Excel</button>
+            </div>
           </header>
 
           <section class="dashboard-list" aria-label="Weekly report content">
@@ -335,13 +357,14 @@
           <section class="dashboard-list" aria-label="Login time issue list">
             <div class="list-heading">
               <div>
-                <h2>Login time (start date &lt;= <span id="loginStartCondition">-</span>, due date &gt;= <span id="loginDueCondition">-</span>)</h2>
+                <h2 id="loginTimeTitle">Login time for -</h2>
               </div>
               <div class="list-actions">
                 <span id="loginTimeInfo">0 issue</span>
-                <button class="list-action-button" id="toggleLoginTimeUser114" type="button" aria-pressed="false">
-                  Hide time
-                </button>
+                <label class="checkbox-control">
+                  <input id="toggleLoginTimeUser114" type="checkbox" />
+                  <span>Hide tickets that already have logged time</span>
+                </label>
               </div>
             </div>
             <div class="table-wrap">
@@ -370,7 +393,7 @@
 
     <script src="./config.example.js?v=20260608-9"></script>
     <script src="./config.js?v=local"></script>
-    <script src="./vendor/xlsx.full.min.js?v=20260608-8"></script>
-    <script src="./app.js?v=20260608-12"></script>
+    <script src="./vendor/xlsx.full.min.js?v=20260609-3"></script>
+    <script src="./app.js?v=20260609-6"></script>
   </body>
 </html>

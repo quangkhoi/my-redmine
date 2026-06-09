@@ -105,7 +105,9 @@ button {
 
 .nav-list {
   display: grid;
+  align-content: start;
   gap: 8px;
+  flex: 1 1 auto;
 }
 
 .nav-group {
@@ -115,8 +117,11 @@ button {
 
 .config-nav-group {
   border-top: 1px solid var(--line);
-  margin-top: 16px;
   padding-top: 16px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
 }
 
 .nav-item {
@@ -245,6 +250,12 @@ button {
   font-size: 13px;
   font-weight: 700;
   padding: 7px 11px;
+}
+
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .eyebrow {
@@ -487,6 +498,22 @@ h2 {
   opacity: 0.55;
 }
 
+.checkbox-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.checkbox-control input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
 .daily-report-box {
   min-height: 360px;
   padding: 18px;
@@ -522,7 +549,7 @@ table {
 
 .report-table th:nth-child(1),
 .report-table td:nth-child(1) {
-  width: 56px;
+  width: 76px;
   text-align: center;
 }
 
@@ -593,6 +620,34 @@ tbody tr:hover {
   border-bottom: 0;
   background: #ffffff;
   padding: 0;
+}
+
+.report-selection-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 48px;
+}
+
+.report-selection-control input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+}
+
+.report-row-excluded td {
+  background: #f3f4f6;
+  color: #8a9592;
+  text-decoration: line-through;
+}
+
+.report-row-excluded .issue-link {
+  color: #8a9592;
+}
+
+.report-row-excluded:hover td {
+  background: #e8eceb;
 }
 
 .issue-row-success td {
@@ -736,6 +791,11 @@ tbody tr:hover {
   }
 
   .split-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .page-actions {
     align-items: flex-start;
     flex-direction: column;
   }
