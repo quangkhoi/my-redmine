@@ -50,6 +50,9 @@ const DAILY_REPORT_ASSIGNEES = [
   { id: 106, name: "Duy" },
   { id: 123, name: "Phi" },
 ];
+const DAILY_REPORT_OTHER_KEY = "other";
+const DAILY_REPORT_OTHER_ASSIGNEE_ID = 114;
+const DAILY_REPORT_OTHER_TRACKER = "開発";
 const CIRCLED_NUMBERS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "⑪", "⑫", "⑬", "⑭", "⑮"];
 
 const els = {
@@ -778,7 +781,7 @@ async function fetchDailyReportIssues() {
   const today = startOfDay(new Date());
   const statusIds = await fetchStatusIds();
   const assigneeIds = DAILY_REPORT_ASSIGNEES.map((item) => item.id);
-  const [todayIssues, processingIssues] = await Promise.all([
+  const [todayIssues, processingIssues, otherIssues] = await Promise.all([
     fetchIssuesForAssigneeIds(assigneeIds, {
       statusId: "*",
       startDateFrom: today,
@@ -787,12 +790,25 @@ async function fetchDailyReportIssues() {
     fetchIssuesForAssigneeIds(assigneeIds, {
       statusId: statusIds.processing,
     }),
+    fetchIssuesForAssigneeIds([DAILY_REPORT_OTHER_ASSIGNEE_ID], {
+      statusId: "*",
+      startDateTo: today,
+    }),
   ]);
 
-  const filteredTodayIssues = todayIssues.filter((issue) => Number(issue.assigned_to && issue.assigned_to.id) !== 114);
+  const filteredTodayIssues = todayIssues.filter(
+    (issue) => Number(issue.assigned_to && issue.assigned_to.id) !== DAILY_REPORT_OTHER_ASSIGNEE_ID
+  );
   const filteredProcessingIssues = processingIssues.filter((issue) => Number(issue.done_ratio) < 90);
+  const filteredOtherIssues = otherIssues.filter(
+    (issue) =>
+      Number(issue.assigned_to && issue.assigned_to.id) === DAILY_REPORT_OTHER_ASSIGNEE_ID &&
+      getTrackerName(issue) === DAILY_REPORT_OTHER_TRACKER &&
+      dateLte(issue.start_date, today) &&
+      ["処理中", "未対応"].includes((issue.status && issue.status.name) || "")
+  );
 
-  return sortIssues(uniqueIssues(filteredTodayIssues.concat(filteredProcessingIssues)));
+  return sortIssues(uniqueIssues(filteredTodayIssues.concat(filteredProcessingIssues, filteredOtherIssues)));
 }
 
 async function fetchMyTaskIssues() {
@@ -1544,11 +1560,14 @@ function renderDailyReport(issues, isLoaded = false) {
 
 function groupDailyReportIssues(issues) {
   const groups = new Map(DAILY_REPORT_ASSIGNEES.map((assignee) => [assignee.id, []]));
+  groups.set(DAILY_REPORT_OTHER_KEY, []);
 
   issues.forEach((issue) => {
     const assigneeId = Number(issue.assigned_to && issue.assigned_to.id);
     if (groups.has(assigneeId)) {
       groups.get(assigneeId).push(issue);
+    } else if (assigneeId === DAILY_REPORT_OTHER_ASSIGNEE_ID && getTrackerName(issue) === DAILY_REPORT_OTHER_TRACKER) {
+      groups.get(DAILY_REPORT_OTHER_KEY).push(issue);
     }
   });
 
@@ -1583,6 +1602,17 @@ function buildDailyReportHtml(groupedIssues) {
     if (assigneeIndex < DAILY_REPORT_ASSIGNEES.length - 1) {
       lines.push("");
     }
+  });
+
+  lines.push("", "■その他");
+  const otherIssues = groupedIssues.get(DAILY_REPORT_OTHER_KEY) || [];
+  otherIssues.forEach((issue, index) => {
+    const number = CIRCLED_NUMBERS[index] || `${index + 1}.`;
+    lines.push(
+      `${number}<a href="${escapeAttr(getIssueUrl(issue))}" target="_blank" rel="noreferrer">${escapeHtml(
+        issue.subject || "-"
+      )} - ${escapeHtml((issue.project && issue.project.name) || "-")}</a>`
+    );
   });
 
   return lines.join("\n");
