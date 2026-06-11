@@ -20,7 +20,15 @@ const STATUS_IDS = {
   cancelled : ISSUE_STATUS.cancelled.id,
   onHold    : ISSUE_STATUS.onHold.id,
 };
-const DASHBOARD_ASSIGNEE_IDS = [106, 114, 94, 113, 99, 123];
+const ASSIGNEES = [
+  { id: 94, name: "Nam" },
+  { id: 99, name: "Tuyen" },
+  { id: 106, name: "Duy" },
+  { id: 113, name: "Anh" },
+  { id: 114, name: "Khoi" },
+  { id: 123, name: "Phi" },
+];
+const DASHBOARD_ASSIGNEE_IDS = ASSIGNEES.map((user) => user.id);
 
 const WORK_ITEM_STATUS_NAMES = new Set([
   ISSUE_STATUS.notStarted.name,
@@ -46,12 +54,7 @@ const TRACKER_NAMES = {
   development: "開発",
   research: "調査",
 };
-const DAILY_REPORT_ASSIGNEES = [
-  { id: 94, name: "Nam" },
-  { id: 99, name: "Tuyen" },
-  { id: 106, name: "Duy" },
-  { id: 123, name: "Phi" },
-];
+const DAILY_REPORT_ASSIGNEES = ASSIGNEES.filter((user) => user.id !== 113 && user.id !== 114);
 const DAILY_REPORT_OTHER = {
   key: "other",
   assigneeId: 114,
@@ -100,11 +103,13 @@ const els = {
   reportRangeLabel: document.querySelector("#reportRangeLabel"),
   reportInfo: document.querySelector("#reportInfo"),
   reportRows: document.querySelector("#reportRows"),
+  loginUserId: document.querySelector("#loginUserId"),
   loginYear: document.querySelector("#loginYear"),
   loginMonth: document.querySelector("#loginMonth"),
   loginTimeTitle: document.querySelector("#loginTimeTitle"),
   loginTimeInfo: document.querySelector("#loginTimeInfo"),
-  toggleLoginTimeUser114: document.querySelector("#toggleLoginTimeUser114"),
+  loginLoggedUserId: document.querySelector("#loginLoggedUserId"),
+  toggleLoggedTimeTickets: document.querySelector("#toggleLoggedTimeTickets"),
   loginTimeRows: document.querySelector("#loginTimeRows"),
   notStartedStartCondition: document.querySelector("#notStartedStartCondition"),
   notStartedDueCondition: document.querySelector("#notStartedDueCondition"),
@@ -130,7 +135,7 @@ const els = {
 };
 
 const dashboardAssigneeIdSet = new Set(DASHBOARD_ASSIGNEE_IDS);
-let hideLoginTimeUser114 = false;
+let hideLoggedTimeTickets = false;
 let globalLoadingCount = 0;
 let dashboardLists = { processing: [], notStarted: [], processed: [] };
 let hideNotStartedNonDevelopment = false;
@@ -164,7 +169,7 @@ function bindEvents() {
   els.loadReport.addEventListener("click", loadReport);
   els.exportReport.addEventListener("click", exportReport);
   els.loadLoginTime.addEventListener("click", loadLoginTime);
-  els.toggleLoginTimeUser114.addEventListener("change", toggleLoginTimeUser114Rows);
+  els.toggleLoggedTimeTickets.addEventListener("change", toggleLoggedTimeTickets);
   els.hideNotStartedNonDevelopment.addEventListener("change", toggleNotStartedNonDevelopment);
   els.hideProcessedResearch.addEventListener("change", toggleProcessedResearch);
   els.dashboardStartDateFrom.addEventListener("change", renderListConditions);
@@ -173,6 +178,8 @@ function bindEvents() {
   els.myTaskEndDate.addEventListener("change", renderMyTaskConditions);
   els.reportFromDate.addEventListener("change", renderReportConditions);
   els.reportToDate.addEventListener("change", renderReportConditions);
+  els.loginUserId.addEventListener("change", handleLoginUserChange);
+  els.loginLoggedUserId.addEventListener("change", applyLogTimeLoggedUserFilter);
   els.loginYear.addEventListener("change", renderLoginTimeConditions);
   els.loginMonth.addEventListener("change", renderLoginTimeConditions);
   els.reportRows.addEventListener("change", handleReportSelectionChange);
@@ -201,9 +208,15 @@ function expandSidebar() {
   els.collapseSidebar.setAttribute("aria-expanded", "true");
 }
 
-function toggleLoginTimeUser114Rows() {
-  hideLoginTimeUser114 = els.toggleLoginTimeUser114.checked;
-  applyLoginTimeUser114Filter();
+function toggleLoggedTimeTickets() {
+  hideLoggedTimeTickets = els.toggleLoggedTimeTickets.checked;
+  applyLogTimeLoggedUserFilter();
+}
+
+function handleLoginUserChange() {
+  syncLoginLoggedUserSelection();
+  renderLoginTimeConditions();
+  applyLogTimeLoggedUserFilter();
 }
 
 function toggleNotStartedNonDevelopment() {
@@ -272,6 +285,9 @@ function renderDashboardControls() {
 
 function renderMyTaskControls() {
   const range = getMyTaskDefaultRange();
+  els.myTaskUserId.innerHTML = ASSIGNEES.map(
+    (user) => `<option value="${user.id}" ${user.id === 114 ? "selected" : ""}>${escapeHtml(user.name)}</option>`
+  ).join("");
   els.myTaskStartDate.value = formatInputDate(range.startDate);
   els.myTaskEndDate.value = formatInputDate(range.endDate);
 }
@@ -298,6 +314,13 @@ function renderLoginTimeControls() {
     years.push(year);
   }
 
+  els.loginUserId.innerHTML = [{ id: "ALL", name: "ALL" }]
+    .concat(ASSIGNEES)
+    .map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`)
+    .join("");
+  els.loginLoggedUserId.innerHTML = ASSIGNEES.map(
+    (item) => `<option value="${item.id}" ${item.id === 114 ? "selected" : ""}>${escapeHtml(item.name)}</option>`
+  ).join("");
   els.loginYear.innerHTML = years
     .map((year) => `<option value="${year}" ${year === currentYear ? "selected" : ""}>${year}</option>`)
     .join("");
@@ -308,7 +331,8 @@ function renderLoginTimeControls() {
 
 function renderLoginTimeConditions() {
   const range = getSelectedLoginMonthRange();
-  els.loginTimeTitle.textContent = `Login time for ${range.year}/${pad2(range.month)}`;
+  const userLabel = getSelectedLoginUserLabel();
+  els.loginTimeTitle.textContent = `Log time for ${range.year}/${pad2(range.month)} - ${userLabel}`;
 }
 
 function renderReportConditions() {
@@ -531,7 +555,7 @@ function exportReport() {
 
 async function loadLoginTime() {
   switchView("login-time");
-  setStatus("Loading login time data...");
+  setStatus("Loading log time data...");
   beginGlobalLoading();
   els.loadLoginTime.disabled = true;
   renderLoginTimeLoading();
@@ -541,14 +565,14 @@ async function loadLoginTime() {
 
     renderLoginTimeConditions();
     const issues = await fetchLoginTimeIssues();
-    hideLoginTimeUser114 = false;
-    els.toggleLoginTimeUser114.checked = false;
+    hideLoggedTimeTickets = false;
+    els.toggleLoggedTimeTickets.checked = false;
     renderLoginTimeList(issues);
     markLoadButtonAsReload(els.loadLoginTime);
-    setStatus(`Loaded ${issues.length} login time issues from Redmine.`, "ok");
+    setStatus(`Loaded ${issues.length} log time issues from Redmine.`, "ok");
   } catch (error) {
     renderLoginTimeError(error.message);
-    setStatus("Could not load login time data", "error");
+    setStatus("Could not load log time data", "error");
   } finally {
     els.loadLoginTime.disabled = false;
     endGlobalLoading();
@@ -847,7 +871,8 @@ async function fetchLoginTimeIssues() {
   }
 
   const range = getSelectedLoginMonthRange();
-  const issues = await fetchIssuesForAssignees({
+  const assigneeIds = getSelectedLoginAssigneeIds();
+  const issues = await fetchIssuesForAssigneeIds(assigneeIds, {
     statusId: "*",
     startDateTo: range.monthEnd,
     dueDateFrom: range.monthStart,
@@ -862,7 +887,7 @@ async function fetchLoginTimeIssues() {
     Object.assign({}, issue, {
       loginSpentHours: (spentDetailsByIssueId.get(Number(issue.id)) || {}).hours || 0,
       loginSpentEntries: (spentDetailsByIssueId.get(Number(issue.id)) || {}).entries || [],
-      hasUser114SpentTime: hasSpentTimeByUser(spentDetailsByIssueId.get(Number(issue.id)) || {}, 114),
+      spentUserIds: getSpentUserIds(spentDetailsByIssueId.get(Number(issue.id)) || {}),
     })
   );
 }
@@ -1208,9 +1233,11 @@ function getCustomFieldItemDisplayValue(issue, item) {
   return value;
 }
 
-function hasSpentTimeByUser(details, userId) {
+function getSpentUserIds(details) {
   const entries = details.entries || [];
-  return entries.some((entry) => Number(entry.user && entry.user.id) === userId);
+  return Array.from(
+    new Set(entries.map((entry) => Number(entry.user && entry.user.id)).filter((userId) => Number.isFinite(userId)))
+  );
 }
 
 function sortIssues(issues) {
@@ -1371,6 +1398,26 @@ function getSelectedLoginMonthRange() {
   monthStart.setHours(0, 0, 0, 0);
   monthEnd.setHours(0, 0, 0, 0);
   return { year, month, monthStart, monthEnd };
+}
+
+function getSelectedLoginAssigneeIds() {
+  const selectedUserId = els.loginUserId.value;
+  if (!selectedUserId || selectedUserId === "ALL") {
+    return DASHBOARD_ASSIGNEE_IDS.slice();
+  }
+  return [Number(selectedUserId)];
+}
+
+function getSelectedLoginUserLabel() {
+  const selectedOption = els.loginUserId.options[els.loginUserId.selectedIndex];
+  return selectedOption ? selectedOption.textContent : "ALL";
+}
+
+function syncLoginLoggedUserSelection() {
+  const selectedUserId = els.loginUserId.value;
+  if (selectedUserId && selectedUserId !== "ALL") {
+    els.loginLoggedUserId.value = selectedUserId;
+  }
 }
 
 function getSelectedMyTaskRange() {
@@ -1603,16 +1650,18 @@ function buildDailyReportHtml(groupedIssues) {
     }
   });
 
-  lines.push("", "■その他");
   const otherIssues = groupedIssues.get(DAILY_REPORT_OTHER.key) || [];
-  otherIssues.forEach((issue, index) => {
-    const number = CIRCLED_NUMBERS[index] || `${index + 1}.`;
-    lines.push(
-      `${number}<a href="${escapeAttr(getIssueUrl(issue))}" target="_blank" rel="noreferrer">${escapeHtml(
-        issue.subject || "-"
-      )} - ${escapeHtml((issue.project && issue.project.name) || "-")}</a>`
-    );
-  });
+  if (otherIssues.length) {
+    lines.push("", "■その他");
+    otherIssues.forEach((issue, index) => {
+      const number = CIRCLED_NUMBERS[index] || `${index + 1}.`;
+      lines.push(
+        `${number}<a href="${escapeAttr(getIssueUrl(issue))}" target="_blank" rel="noreferrer">${escapeHtml(
+          issue.subject || "-"
+        )} - ${escapeHtml((issue.project && issue.project.name) || "-")}</a>`
+      );
+    });
+  }
 
   return lines.join("\n");
 }
@@ -1658,22 +1707,26 @@ function renderLoginTimeList(issues) {
 
   if (!issues.length) {
     els.loginTimeRows.innerHTML = '<tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>';
-    applyLoginTimeUser114Filter();
+    applyLogTimeLoggedUserFilter();
     return;
   }
 
   els.loginTimeRows.innerHTML = issues.map(loginTimeRow).join("");
-  applyLoginTimeUser114Filter();
+  applyLogTimeLoggedUserFilter();
 }
 
-function applyLoginTimeUser114Filter() {
-  const targetRows = els.loginTimeRows.querySelectorAll('[data-has-user114-spent="true"]');
+function applyLogTimeLoggedUserFilter() {
+  const targetUserId = Number(els.loginLoggedUserId.value);
+  const targetRows = els.loginTimeRows.querySelectorAll("[data-spent-user-ids]");
 
   for (let index = 0; index < targetRows.length; index += 1) {
-    targetRows[index].hidden = hideLoginTimeUser114;
+    const spentUserIds = String(targetRows[index].dataset.spentUserIds || "")
+      .split(",")
+      .map(Number);
+    targetRows[index].hidden = hideLoggedTimeTickets && spentUserIds.includes(targetUserId);
   }
 
-  els.toggleLoginTimeUser114.checked = hideLoginTimeUser114;
+  els.toggleLoggedTimeTickets.checked = hideLoggedTimeTickets;
 }
 
 function renderReport(lists, total) {
@@ -1939,10 +1992,10 @@ function myTaskRow(issue, index) {
 
 function loginTimeRow(issue, index) {
   const issueUrl = getIssueUrl(issue);
-  const user114Flag = issue.hasUser114SpentTime ? "true" : "false";
+  const spentUserIds = (issue.spentUserIds || []).join(",");
 
   return `
-    <tr data-has-user114-spent="${user114Flag}">
+    <tr data-spent-user-ids="${escapeAttr(spentUserIds)}">
       <td>${index + 1}</td>
       <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
       <td>${escapeHtml(formatHours(issue.loginSpentHours))}</td>
@@ -1952,23 +2005,21 @@ function loginTimeRow(issue, index) {
       <td>${escapeHtml(formatDate(issue.start_date))}</td>
       <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
     </tr>
-    ${timeEntryDetails(issue.loginSpentEntries || [], issue.hasUser114SpentTime)}
+    ${timeEntryDetails(issue.loginSpentEntries || [], spentUserIds)}
   `;
 }
 
-function timeEntryDetails(entries, hasUser114SpentTime) {
+function timeEntryDetails(entries, spentUserIds) {
   if (!entries.length) {
     return "";
   }
 
-  return entries.map((entry) => timeEntryDetail(entry, hasUser114SpentTime)).join("");
+  return entries.map((entry) => timeEntryDetail(entry, spentUserIds)).join("");
 }
 
-function timeEntryDetail(entry, hasUser114SpentTime) {
-  const user114Flag = hasUser114SpentTime ? "true" : "false";
-
+function timeEntryDetail(entry, spentUserIds) {
   return `
-    <tr class="time-entry-detail-row" data-has-user114-spent="${user114Flag}">
+    <tr class="time-entry-detail-row" data-spent-user-ids="${escapeAttr(spentUserIds)}">
       <td></td>
       <td></td>
       <td>${escapeHtml(formatHours(entry.hours))}</td>

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Redmine Dashboard</title>
     <meta http-equiv="Cache-Control" content="no-store" />
-    <link rel="stylesheet" href="./styles.css?v=20260609-6" />
+    <link rel="stylesheet" href="./styles.css?v=20260611-2" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260609-6" />
   </head>
   <body>
@@ -58,13 +58,7 @@
             <div class="nav-panel">
               <label class="sidebar-field">
                 <span>User</span>
-                <select id="myTaskUserId">
-                  <option value="106">Dinh Thanh Duy</option>
-                  <option value="94">Nam Tran</option>
-                  <option value="99">Nguyen Tuyen</option>
-                  <option value="114" selected>Duong Khoi</option>
-                  <option value="123">Phi Hoang</option>
-                </select>
+                <select id="myTaskUserId"></select>
               </label>
               <div class="sidebar-field">
                 <span>Start date</span>
@@ -81,8 +75,12 @@
             </div>
           </div>
           <div class="nav-group">
-            <button class="nav-item" type="button" data-view="login-time">Login time</button>
+            <button class="nav-item" type="button" data-view="login-time">Log time</button>
             <div class="nav-panel">
+              <label class="sidebar-field">
+                <span>User</span>
+                <select id="loginUserId"></select>
+              </label>
               <label class="sidebar-field">
                 <span>Year</span>
                 <select id="loginYear"></select>
@@ -320,21 +318,23 @@
           </section>
         </section>
 
-        <section class="view" id="loginTimeView" aria-label="Login time">
+        <section class="view" id="loginTimeView" aria-label="Log time">
           <header class="page-header">
-            <p class="eyebrow">Login time</p>
+            <p class="eyebrow">Log time</p>
           </header>
 
-          <section class="dashboard-list" aria-label="Login time issue list">
+          <section class="dashboard-list" aria-label="Log time issue list">
             <div class="list-heading">
               <div>
-                <h2 id="loginTimeTitle">Login time for -</h2>
+                <h2 id="loginTimeTitle">Log time for -</h2>
               </div>
               <div class="list-actions">
                 <span id="loginTimeInfo">0 issue</span>
-                <label class="checkbox-control">
-                  <input id="toggleLoginTimeUser114" type="checkbox" />
-                  <span>Hide tickets that already have logged time</span>
+                <label class="checkbox-control log-time-hide-control">
+                  <input id="toggleLoggedTimeTickets" type="checkbox" />
+                  <span>Hide tickets that</span>
+                  <select id="loginLoggedUserId"></select>
+                  <span>has logged time</span>
                 </label>
               </div>
             </div>
@@ -363,6 +363,6 @@
     </main>
 
     <script src="./vendor/xlsx.full.min.js?v=20260609-3"></script>
-    <script src="./app.js?v=20260611-8"></script>
+    <script src="./app.js?v=20260611-13"></script>
   </body>
 </html>

@@ -514,6 +514,21 @@ h2 {
   accent-color: var(--accent);
 }
 
+.checkbox-control select {
+  min-width: 82px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  padding: 0 8px;
+}
+
+.log-time-hide-control {
+  flex-wrap: wrap;
+}
+
 .daily-report-box {
   min-height: 360px;
   padding: 18px;
