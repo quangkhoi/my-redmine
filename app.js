@@ -1,41 +1,39 @@
-const DEFAULT_CONFIG = {
+const REDMINE = {
   baseUrl: "https://redmine.wdm.co.jp/",
-  proxyUrl: "",
-  apiKey: "",
-  basicAuth: {
-    username: "",
-    password: "",
-  },
-  statuses: {
-    processing: "処理中",
-    notStarted: "未対応",
-    processed: "処理済み",
-  },
-  statusIds: {
-    processing: 2,
-    notStarted: 1,
-    processed: 3,
-  },
-  allowedLogins: ["duydinh", "khoiduong@freec.asia", "namtran", "tuyennguyen", "phihoang1994", "260618"],
-  allowedAssigneeIds: [106, 114, 94, 113, 99, 123],
+  proxyUrl: "https://redmine-https-proxy.qkhoiwork.workers.dev",
 };
-const CONFIG_STORAGE_KEY = "redmine-dashboard-config";
-let config = buildRuntimeConfig();
 
-const STATUS_NAMES = {
-  processing: (config.statuses && config.statuses.processing) || "処理中",
-  notStarted: (config.statuses && config.statuses.notStarted) || "未対応",
-  processed: (config.statuses && config.statuses.processed) || "処理済み",
+const ISSUE_STATUS = {
+  notStarted: { id: 1, name: "未対応" },
+  processing: { id: 2, name: "処理中" },
+  processed : { id: 3, name: "処理済み" },
+  done      : { id: 5, name: "完了" },
+  cancelled : { id: 6, name: "完了（中止）" },
+  onHold    : { id: 7, name: "完了（保留）" },
 };
+
+const STATUS_IDS = {
+  processing: ISSUE_STATUS.processing.id,
+  notStarted: ISSUE_STATUS.notStarted.id,
+  processed : ISSUE_STATUS.processed.id,
+  done      : ISSUE_STATUS.done.id,
+  cancelled : ISSUE_STATUS.cancelled.id,
+  onHold    : ISSUE_STATUS.onHold.id,
+};
+const DASHBOARD_ASSIGNEE_IDS = [106, 114, 94, 113, 99, 123];
 
 const WORK_ITEM_STATUS_NAMES = new Set([
-  STATUS_NAMES.notStarted,
-  STATUS_NAMES.processing,
-  STATUS_NAMES.processed,
-  "完了",
+  ISSUE_STATUS.notStarted.name,
+  ISSUE_STATUS.processing.name,
+  ISSUE_STATUS.processed.name,
+  ISSUE_STATUS.done.name,
 ]);
 
-const MY_TASK_EXCLUDED_STATUS_NAMES = new Set(["完了（中止）", "完了（保留）", "完了"]);
+const MY_TASK_EXCLUDED_STATUS_NAMES = new Set([
+  ISSUE_STATUS.cancelled.name,
+  ISSUE_STATUS.onHold.name,
+  ISSUE_STATUS.done.name,
+]);
 const RELEASE_TARGET_FIELD_NAME = "リリース対象";
 const RELEASE_TARGET_VALUE_NAMES = new Map([
   ["36", "ESP"],
@@ -44,16 +42,38 @@ const RELEASE_TARGET_VALUE_NAMES = new Map([
   ["37", "バッチ"],
   ["39", "DB"],
 ]);
+const TRACKER_NAMES = {
+  development: "開発",
+  research: "調査",
+};
 const DAILY_REPORT_ASSIGNEES = [
   { id: 94, name: "Nam" },
   { id: 99, name: "Tuyen" },
   { id: 106, name: "Duy" },
   { id: 123, name: "Phi" },
 ];
-const DAILY_REPORT_OTHER_KEY = "other";
-const DAILY_REPORT_OTHER_ASSIGNEE_ID = 114;
-const DAILY_REPORT_OTHER_TRACKER = "開発";
-const CIRCLED_NUMBERS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "⑪", "⑫", "⑬", "⑭", "⑮"];
+const DAILY_REPORT_OTHER = {
+  key: "other",
+  assigneeId: 114,
+  tracker: TRACKER_NAMES.development,
+};
+const CIRCLED_NUMBERS = [
+  "①",
+  "②",
+  "③",
+  "④",
+  "⑤",
+  "⑥",
+  "⑦",
+  "⑧",
+  "⑨",
+  "⑩",
+  "⑪",
+  "⑫",
+  "⑬",
+  "⑭",
+  "⑮",
+];
 
 const els = {
   appLayout: document.querySelector(".app-layout"),
@@ -66,14 +86,6 @@ const els = {
   loadReport: document.querySelector("#loadReport"),
   exportReport: document.querySelector("#exportReport"),
   loadLoginTime: document.querySelector("#loadLoginTime"),
-  configPanel: document.querySelector("#configPanel"),
-  configForm: document.querySelector("#configForm"),
-  configBaseUrl: document.querySelector("#configBaseUrl"),
-  configProxyUrl: document.querySelector("#configProxyUrl"),
-  configApiKey: document.querySelector("#configApiKey"),
-  configBasicUsername: document.querySelector("#configBasicUsername"),
-  configBasicPassword: document.querySelector("#configBasicPassword"),
-  clearConfig: document.querySelector("#clearConfig"),
   dashboardStartDateFrom: document.querySelector("#dashboardStartDateFrom"),
   dashboardStartDateTo: document.querySelector("#dashboardStartDateTo"),
   myTaskUserId: document.querySelector("#myTaskUserId"),
@@ -105,6 +117,11 @@ const els = {
   processingRows: document.querySelector("#processingRows"),
   notStartedRows: document.querySelector("#notStartedRows"),
   processedRows: document.querySelector("#processedRows"),
+  reloadProcessing: document.querySelector("#reloadProcessing"),
+  reloadNotStarted: document.querySelector("#reloadNotStarted"),
+  reloadProcessed: document.querySelector("#reloadProcessed"),
+  hideNotStartedNonDevelopment: document.querySelector("#hideNotStartedNonDevelopment"),
+  hideProcessedResearch: document.querySelector("#hideProcessedResearch"),
   dailyReportInfo: document.querySelector("#dailyReportInfo"),
   dailyReportContent: document.querySelector("#dailyReportContent"),
   navGroups: document.querySelectorAll(".nav-group"),
@@ -112,15 +129,16 @@ const els = {
   views: document.querySelectorAll(".view"),
 };
 
-let allowedAssigneeIds = new Set((config.allowedAssigneeIds || []).map(Number).filter(Boolean));
+const dashboardAssigneeIdSet = new Set(DASHBOARD_ASSIGNEE_IDS);
 let hideLoginTimeUser114 = false;
 let globalLoadingCount = 0;
+let dashboardLists = { processing: [], notStarted: [], processed: [] };
+let hideNotStartedNonDevelopment = false;
+let hideProcessedResearch = false;
 let loadedReportLists = null;
 let releaseTargetValueNames = new Map();
 
 function init() {
-  renderConfigForm();
-  renderConfigPanel();
   renderDashboardControls();
   renderMyTaskControls();
   renderReportControls();
@@ -137,15 +155,18 @@ function bindEvents() {
   els.collapseSidebar.addEventListener("click", collapseSidebar);
   els.expandSidebar.addEventListener("click", expandSidebar);
   els.loadDashboard.addEventListener("click", loadDashboard);
+  els.reloadProcessing.addEventListener("click", () => reloadDashboardList("processing"));
+  els.reloadNotStarted.addEventListener("click", () => reloadDashboardList("notStarted"));
+  els.reloadProcessed.addEventListener("click", () => reloadDashboardList("processed"));
   els.loadDailyReport.addEventListener("click", loadDailyReport);
   els.copyDailyReport.addEventListener("click", copyDailyReport);
   els.loadMyTask.addEventListener("click", loadMyTask);
   els.loadReport.addEventListener("click", loadReport);
   els.exportReport.addEventListener("click", exportReport);
   els.loadLoginTime.addEventListener("click", loadLoginTime);
-  els.configForm.addEventListener("submit", saveRuntimeConfig);
-  els.clearConfig.addEventListener("click", clearRuntimeConfig);
   els.toggleLoginTimeUser114.addEventListener("change", toggleLoginTimeUser114Rows);
+  els.hideNotStartedNonDevelopment.addEventListener("change", toggleNotStartedNonDevelopment);
+  els.hideProcessedResearch.addEventListener("change", toggleProcessedResearch);
   els.dashboardStartDateFrom.addEventListener("change", renderListConditions);
   els.dashboardStartDateTo.addEventListener("change", renderListConditions);
   els.myTaskStartDate.addEventListener("change", renderMyTaskConditions);
@@ -160,98 +181,13 @@ function bindEvents() {
   });
 }
 
-function buildRuntimeConfig() {
-  return mergeConfig(DEFAULT_CONFIG, window.REDMINE_CONFIG || {}, readStoredConfig());
-}
-
-function mergeConfig(...sources) {
-  return sources.reduce((merged, source) => {
-    const next = source || {};
-    return Object.assign({}, merged, next, {
-      basicAuth: Object.assign({}, merged.basicAuth || {}, next.basicAuth || {}),
-      statuses: Object.assign({}, merged.statuses || {}, next.statuses || {}),
-      statusIds: Object.assign({}, merged.statusIds || {}, next.statusIds || {}),
-    });
-  }, {});
-}
-
-function readStoredConfig() {
-  try {
-    return JSON.parse(sessionStorage.getItem(CONFIG_STORAGE_KEY) || "{}");
-  } catch (error) {
-    return {};
-  }
-}
-
-function renderConfigForm() {
-  els.configBaseUrl.value = config.baseUrl || "";
-  els.configProxyUrl.value = config.proxyUrl || "";
-  els.configApiKey.value = config.apiKey || "";
-  els.configBasicUsername.value = (config.basicAuth && config.basicAuth.username) || "";
-  els.configBasicPassword.value = (config.basicAuth && config.basicAuth.password) || "";
-}
-
-function renderConfigPanel() {
-  const isReady = hasRuntimeConfig();
-  els.configPanel.classList.toggle("is-configured", isReady);
-  els.configPanel.querySelector(".config-state").textContent = getConfigStateMessage(isReady);
-}
-
-function getConfigStateMessage(isReady) {
-  if (isConfiguredProxyBlocked()) {
-    return "GitHub Pages cannot call an HTTP local proxy. Use direct Redmine HTTPS or an HTTPS proxy.";
-  }
-  return isReady
-    ? "Configured for this browser session."
-    : "Enter a Redmine URL/API key or an HTTPS proxy before loading data.";
-}
-
-function saveRuntimeConfig(event) {
-  event.preventDefault();
-
-  const nextConfig = {
-    baseUrl: els.configBaseUrl.value.trim(),
-    proxyUrl: els.configProxyUrl.value.trim(),
-    apiKey: els.configApiKey.value.trim(),
-    basicAuth: {
-      username: els.configBasicUsername.value.trim(),
-      password: els.configBasicPassword.value,
-    },
-  };
-
-  sessionStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(nextConfig));
-  config = buildRuntimeConfig();
-  allowedAssigneeIds = new Set((config.allowedAssigneeIds || []).map(Number).filter(Boolean));
-  renderConfigPanel();
-  setStatus("Saved Redmine configuration for this browser session.", "ok");
-}
-
-function clearRuntimeConfig() {
-  sessionStorage.removeItem(CONFIG_STORAGE_KEY);
-  config = buildRuntimeConfig();
-  renderConfigForm();
-  renderConfigPanel();
-  setStatus("Cleared browser session configuration.", "ok");
-}
-
-function hasRuntimeConfig() {
-  const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
-  if (!apiBaseUrl) {
-    return false;
-  }
-  if (isConfiguredProxyBlocked()) {
-    return false;
-  }
-  if (normalizeBaseUrl(config.proxyUrl || "")) {
-    return true;
-  }
-  return Boolean((config.apiKey || "").trim() || buildBasicAuthHeader());
-}
-
 function requireRuntimeConfig() {
-  if (!hasRuntimeConfig()) {
-    renderConfigPanel();
-    throw new Error("Enter Redmine configuration before loading data.");
+  const proxyConfigError = getProxyConfigError();
+  if (proxyConfigError) {
+    throw new Error(proxyConfigError);
+  }
+  if (!normalizeBaseUrl(getApiBaseUrl())) {
+    throw new Error("Redmine API URL is not configured.");
   }
 }
 
@@ -268,6 +204,16 @@ function expandSidebar() {
 function toggleLoginTimeUser114Rows() {
   hideLoginTimeUser114 = els.toggleLoginTimeUser114.checked;
   applyLoginTimeUser114Filter();
+}
+
+function toggleNotStartedNonDevelopment() {
+  hideNotStartedNonDevelopment = els.hideNotStartedNonDevelopment.checked;
+  renderDashboardList("notStarted");
+}
+
+function toggleProcessedResearch() {
+  hideProcessedResearch = els.hideProcessedResearch.checked;
+  renderDashboardList("processed");
 }
 
 function markLoadButtonAsReload(button) {
@@ -305,8 +251,6 @@ function switchView(viewName) {
       ? "myTaskView"
       : viewName === "daily-report"
       ? "dailyReportView"
-      : viewName === "config"
-      ? "configView"
       : `${viewName}View`;
   const target = document.querySelector(`#${targetId}`);
   if (target) {
@@ -375,9 +319,8 @@ function renderReportConditions() {
 }
 
 function renderInitialEmptyLists() {
-  renderList("processing", []);
-  renderList("notStarted", []);
-  renderList("processed", []);
+  dashboardLists = { processing: [], notStarted: [], processed: [] };
+  renderDashboardLists();
   renderDailyReport([]);
   renderMyTaskList([]);
   renderReport({ prevCsharp: [], prevWeb: [], currentCsharp: [], currentWeb: [], hasPrevious: true }, 0);
@@ -385,9 +328,16 @@ function renderInitialEmptyLists() {
 }
 
 function renderDashboardLoading() {
-  els.processingRows.innerHTML = '<tr><td colspan="9" class="empty-cell">Loading data...</td></tr>';
-  els.notStartedRows.innerHTML = '<tr><td colspan="10" class="empty-cell">Loading data...</td></tr>';
-  els.processedRows.innerHTML = '<tr><td colspan="10" class="empty-cell">Loading data...</td></tr>';
+  renderDashboardListLoading("processing");
+  renderDashboardListLoading("notStarted");
+  renderDashboardListLoading("processed");
+}
+
+function renderDashboardListLoading(name) {
+  const rowsEl = els[`${name}Rows`];
+  const infoEl = els[`${name}Info`];
+  rowsEl.innerHTML = `<tr><td colspan="${getDashboardListColspan(name)}" class="empty-cell">Loading data...</td></tr>`;
+  infoEl.textContent = "Loading...";
 }
 
 function renderMyTaskLoading() {
@@ -411,23 +361,41 @@ async function loadDashboard() {
 
   try {
     requireRuntimeConfig();
-    allowedAssigneeIds = new Set((config.allowedAssigneeIds || []).map(Number).filter(Boolean));
-    if (!allowedAssigneeIds.size) {
-      throw new Error("Please configure allowedAssigneeIds in config.js.");
-    }
     const lists = await fetchDashboardLists();
 
-    renderList("processing", lists.processing);
-    renderList("notStarted", lists.notStarted);
-    renderList("processed", lists.processed);
+    dashboardLists = lists;
+    renderDashboardLists();
     const total = lists.processing.length + lists.notStarted.length + lists.processed.length;
     markLoadButtonAsReload(els.loadDashboard);
     setStatus(`Loaded ${total} issues from Redmine.`, "ok");
   } catch (error) {
+    dashboardLists = { processing: [], notStarted: [], processed: [] };
     renderError(error.message);
     setStatus("Could not load data", "error");
   } finally {
     els.loadDashboard.disabled = false;
+    endGlobalLoading();
+  }
+}
+
+async function reloadDashboardList(name) {
+  switchView("dashboard");
+  setStatus(`Reloading ${getDashboardListLabel(name)} data...`);
+  beginGlobalLoading();
+  const button = getDashboardReloadButton(name);
+  button.disabled = true;
+  renderDashboardListLoading(name);
+
+  try {
+    requireRuntimeConfig();
+    dashboardLists[name] = await fetchDashboardList(name);
+    renderDashboardList(name);
+    setStatus(`Reloaded ${getVisibleDashboardIssues(name).length} ${getDashboardListLabel(name)} issues from Redmine.`, "ok");
+  } catch (error) {
+    renderDashboardListError(name, error.message);
+    setStatus(`Could not reload ${getDashboardListLabel(name)} data`, "error");
+  } finally {
+    button.disabled = false;
     endGlobalLoading();
   }
 }
@@ -570,10 +538,6 @@ async function loadLoginTime() {
 
   try {
     requireRuntimeConfig();
-    allowedAssigneeIds = new Set((config.allowedAssigneeIds || []).map(Number).filter(Boolean));
-    if (!allowedAssigneeIds.size) {
-      throw new Error("Please configure allowedAssigneeIds in config.js.");
-    }
 
     renderLoginTimeConditions();
     const issues = await fetchLoginTimeIssues();
@@ -594,7 +558,7 @@ async function loadLoginTime() {
 async function fetchReportLists() {
   const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
   if (!apiBaseUrl) {
-    throw new Error("Please configure the API URL in config.js.");
+    throw new Error("Redmine API URL is not configured.");
   }
 
   const ranges = getSelectedReportRanges();
@@ -743,7 +707,7 @@ function convertCharsToExcelColumnWidth(wch) {
 async function fetchDashboardLists() {
   const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
   if (!apiBaseUrl) {
-    throw new Error("Please configure the API URL in config.js.");
+    throw new Error("Redmine API URL is not configured.");
   }
 
   const statusIds = await fetchStatusIds();
@@ -752,30 +716,75 @@ async function fetchDashboardLists() {
   releaseTargetValueNames = await fetchCustomFieldValueNameMap(RELEASE_TARGET_FIELD_NAME).catch(() => new Map());
 
   const [processing, notStarted, processed] = await Promise.all([
-    fetchIssuesForAssignees({
-      statusId: statusIds.processing,
-    }),
-    fetchIssuesForAssignees({
-      statusId: statusIds.notStarted,
-      startDateFrom: range.startDate,
-      startDateTo: range.endDate,
-    }),
-    fetchIssuesForAssignees({
-      statusId: statusIds.processed,
-    }),
+    fetchDashboardListIssues("processing", statusIds, range),
+    fetchDashboardListIssues("notStarted", statusIds, range),
+    fetchDashboardListIssues("processed", statusIds, range),
   ]);
 
   return {
-    processing: sortIssues(processing.filter((issue) => Number(issue.done_ratio) < 90)),
-    notStarted: sortNotStartedIssues(notStarted),
-    processed: sortIssuesDescending(processed.filter((issue) => Number(issue.done_ratio) !== 100)),
+    processing,
+    notStarted,
+    processed,
   };
+}
+
+async function fetchDashboardList(name) {
+  const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
+  if (!apiBaseUrl) {
+    throw new Error("Redmine API URL is not configured.");
+  }
+
+  const statusIds = await fetchStatusIds();
+  const range = getSelectedDashboardRange();
+  validateDateRange(range.startDate, range.endDate);
+  if (name === "processed") {
+    releaseTargetValueNames = await fetchCustomFieldValueNameMap(RELEASE_TARGET_FIELD_NAME).catch(() => new Map());
+  }
+  return fetchDashboardListIssues(name, statusIds, range);
+}
+
+async function fetchDashboardListIssues(name, statusIds, range) {
+  if (name === "processing") {
+    const issues = await fetchIssuesForAssignees({
+      statusId: statusIds.processing,
+    });
+    return sortIssues(issues.filter((issue) => Number(issue.done_ratio) < 100));
+  }
+
+  if (name === "notStarted") {
+    const issues = await fetchIssuesForAssignees({
+      statusId: statusIds.notStarted,
+      startDateFrom: range.startDate,
+      startDateTo: range.endDate,
+    });
+    return sortNotStartedIssues(issues);
+  }
+
+  if (name === "processed") {
+    const [processedIssues, completedProcessingIssues] = await Promise.all([
+      fetchIssuesForAssignees({
+        statusId: statusIds.processed,
+      }),
+      fetchIssuesForAssignees({
+        statusId: statusIds.processing,
+      }),
+    ]);
+    return sortIssuesDescending(
+      uniqueIssues(
+        processedIssues
+          .filter((issue) => Number(issue.done_ratio) === 90)
+          .concat(completedProcessingIssues.filter((issue) => Number(issue.done_ratio) === 100))
+      )
+    );
+  }
+
+  throw new Error(`Unknown dashboard list: ${name}`);
 }
 
 async function fetchDailyReportIssues() {
   const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
   if (!apiBaseUrl) {
-    throw new Error("Please configure the API URL in config.js.");
+    throw new Error("Redmine API URL is not configured.");
   }
 
   const today = startOfDay(new Date());
@@ -790,20 +799,20 @@ async function fetchDailyReportIssues() {
     fetchIssuesForAssigneeIds(assigneeIds, {
       statusId: statusIds.processing,
     }),
-    fetchIssuesForAssigneeIds([DAILY_REPORT_OTHER_ASSIGNEE_ID], {
+    fetchIssuesForAssigneeIds([DAILY_REPORT_OTHER.assigneeId], {
       statusId: "*",
       startDateTo: today,
     }),
   ]);
 
   const filteredTodayIssues = todayIssues.filter(
-    (issue) => Number(issue.assigned_to && issue.assigned_to.id) !== DAILY_REPORT_OTHER_ASSIGNEE_ID
+    (issue) => Number(issue.assigned_to && issue.assigned_to.id) !== DAILY_REPORT_OTHER.assigneeId
   );
   const filteredProcessingIssues = processingIssues.filter((issue) => Number(issue.done_ratio) < 90);
   const filteredOtherIssues = otherIssues.filter(
     (issue) =>
-      Number(issue.assigned_to && issue.assigned_to.id) === DAILY_REPORT_OTHER_ASSIGNEE_ID &&
-      getTrackerName(issue) === DAILY_REPORT_OTHER_TRACKER &&
+      Number(issue.assigned_to && issue.assigned_to.id) === DAILY_REPORT_OTHER.assigneeId &&
+      getTrackerName(issue) === DAILY_REPORT_OTHER.tracker &&
       dateLte(issue.start_date, today) &&
       ["処理中", "未対応"].includes((issue.status && issue.status.name) || "")
   );
@@ -814,7 +823,7 @@ async function fetchDailyReportIssues() {
 async function fetchMyTaskIssues() {
   const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
   if (!apiBaseUrl) {
-    throw new Error("Please configure the API URL in config.js.");
+    throw new Error("Redmine API URL is not configured.");
   }
 
   const range = getSelectedMyTaskRange();
@@ -834,7 +843,7 @@ async function fetchMyTaskIssues() {
 async function fetchLoginTimeIssues() {
   const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
   if (!apiBaseUrl) {
-    throw new Error("Please configure the API URL in config.js.");
+    throw new Error("Redmine API URL is not configured.");
   }
 
   const range = getSelectedLoginMonthRange();
@@ -859,12 +868,8 @@ async function fetchLoginTimeIssues() {
 }
 
 async function fetchStatusIds() {
-  if (config.statusIds && config.statusIds.processing && config.statusIds.notStarted && config.statusIds.processed) {
-    return {
-      processing: config.statusIds.processing,
-      notStarted: config.statusIds.notStarted,
-      processed: config.statusIds.processed,
-    };
+  if (STATUS_IDS.processing && STATUS_IDS.notStarted && STATUS_IDS.processed) {
+    return STATUS_IDS;
   }
 
   const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
@@ -881,9 +886,9 @@ async function fetchStatusIds() {
   };
 
   return {
-    processing: findId(STATUS_NAMES.processing),
-    notStarted: findId(STATUS_NAMES.notStarted),
-    processed: findId(STATUS_NAMES.processed),
+    processing: findId(ISSUE_STATUS.processing.name),
+    notStarted: findId(ISSUE_STATUS.notStarted.name),
+    processed: findId(ISSUE_STATUS.processed.name),
   };
 }
 
@@ -918,7 +923,7 @@ async function fetchCustomFieldValueNameMap(fieldName) {
 }
 
 async function fetchIssuesForAssignees(filters) {
-  return fetchIssuesForAssigneeIds(Array.from(allowedAssigneeIds), filters);
+  return fetchIssuesForAssigneeIds(Array.from(dashboardAssigneeIdSet), filters);
 }
 
 async function fetchIssuesForAssigneeIds(assigneeIds, filters) {
@@ -1043,49 +1048,19 @@ async function fetchTimeEntryPages({ issueId, userId, spentFrom, spentTo }) {
 }
 
 async function redmineGet(url) {
-  const headers = {};
-  const usesProxy = isProxyRequest(url);
-  const apiKey = (config.apiKey || "").trim();
+  const response = await safeFetch(url);
 
-  if (!usesProxy) {
-    if (apiKey) {
-      headers["X-Redmine-API-Key"] = apiKey;
-    }
-    const basicAuthHeader = buildBasicAuthHeader();
-    if (basicAuthHeader) {
-      headers.Authorization = basicAuthHeader;
-    }
+  if (response.ok) {
+    return response.json();
   }
 
-  const headerResponse = await safeFetch(url, {
-    headers,
-  });
-
-  if (headerResponse.ok) {
-    return headerResponse.json();
-  }
-
-  if (apiKey && headerResponse.status === 401) {
-    const queryUrl = new URL(url.toString());
-    queryUrl.searchParams.set("key", apiKey);
-    const queryResponse = await safeFetch(queryUrl, {
-      credentials: "include",
-    });
-
-    if (queryResponse.ok) {
-      return queryResponse.json();
-    }
-
-    throw buildHttpError(queryResponse, queryUrl);
-  }
-
-  throw buildHttpError(headerResponse, url);
+  throw buildHttpError(response, url);
 }
 
 async function safeFetch(url, options) {
-  const blockedHttpsMessage = getBlockedHttpFromHttpsPageMessage(url);
-  if (blockedHttpsMessage) {
-    throw new Error(blockedHttpsMessage);
+  const invalidRequestMessage = getInvalidRequestUrlMessage(url);
+  if (invalidRequestMessage) {
+    throw new Error(invalidRequestMessage);
   }
 
   try {
@@ -1096,15 +1071,9 @@ async function safeFetch(url, options) {
 }
 
 function buildHttpError(response, url) {
-  if (response.status === 404 && isProxyRequest(url) && url.pathname === "/time_entries.json") {
-    return new Error(
-      "The running proxy is an old version and does not expose /time_entries.json. Run start-proxy.bat again, then reload Login time."
-    );
-  }
-
   if (response.status === 401) {
     return new Error(
-      `The API returned HTTP 401 at ${url.pathname}. The server requires login/Basic Auth, or the API key is invalid.`
+      `The API returned HTTP 401 at ${url.pathname}. Check the Cloudflare Worker secrets or Redmine authentication.`
     );
   }
 
@@ -1115,55 +1084,44 @@ function buildHttpError(response, url) {
   return new Error(`The API returned HTTP ${response.status} at ${url.pathname}.`);
 }
 
-function buildBasicAuthHeader() {
-  const username = (config.basicAuth && config.basicAuth.username) || "";
-  const password = (config.basicAuth && config.basicAuth.password) || "";
-  if (!username && !password) {
-    return "";
-  }
-  return `Basic ${btoa(`${username}:${password}`)}`;
-}
-
 function isProxyRequest(url) {
-  const proxyUrl = normalizeBaseUrl(config.proxyUrl || "");
+  const proxyUrl = normalizeBaseUrl(REDMINE.proxyUrl);
   return proxyUrl && url.toString().startsWith(proxyUrl);
 }
 
-function getBlockedHttpFromHttpsPageMessage(url) {
-  if (window.location.protocol !== "https:" || url.protocol !== "http:") {
-    return "";
+function getInvalidRequestUrlMessage(url) {
+  if (isProxyRequest(url) && url.protocol !== "https:") {
+    return "Proxy URL must use HTTPS. Update REDMINE.proxyUrl in app.js.";
   }
-
-  const host = url.hostname.toLowerCase();
-  if (host === "127.0.0.1" || host === "localhost" || host === "::1") {
-    return "GitHub Pages runs on HTTPS and cannot call a local HTTP proxy such as http://127.0.0.1:8787. Open this app from the local file instead, or configure an HTTPS proxy endpoint.";
+  if (window.location.protocol === "https:" && url.protocol === "http:") {
+    return "This HTTPS page cannot call an HTTP API. Use an HTTPS Redmine URL or configure the Cloudflare Worker HTTPS proxy.";
   }
-
-  return "GitHub Pages runs on HTTPS and cannot call an HTTP API/proxy. Use an HTTPS Redmine URL or an HTTPS proxy endpoint.";
+  return "";
 }
 
 function getFetchFailureMessage(url) {
   if (window.location.protocol === "https:" && !isProxyRequest(url)) {
-    return `The browser could not call ${url.pathname} from GitHub Pages. Redmine likely does not allow CORS from this page. Use an HTTPS proxy endpoint, or open this app locally with start-proxy.bat.`;
+    return `The browser could not call ${url.pathname} from GitHub Pages. Redmine likely does not allow CORS from this page. Configure the Cloudflare Worker HTTPS proxy.`;
   }
 
   if (isProxyRequest(url)) {
-    return `Could not call the configured proxy at ${url.pathname}. Check that the proxy URL is reachable from this page and uses HTTPS when running on GitHub Pages.`;
+    return `Could not call the configured HTTPS proxy at ${url.pathname}. Check that the Cloudflare Worker URL is deployed and reachable.`;
   }
 
-  return `Could not call the API at ${url.pathname}. If you are opening this app locally, run start-proxy.bat and load the data again.`;
+  return `Could not call the API at ${url.pathname}. If Redmine blocks browser CORS, configure the Cloudflare Worker HTTPS proxy.`;
 }
 
-function isConfiguredProxyBlocked() {
-  const proxyUrl = normalizeBaseUrl(config.proxyUrl || "");
+function getProxyConfigError() {
+  const proxyUrl = normalizeBaseUrl(REDMINE.proxyUrl);
   if (!proxyUrl) {
-    return false;
+    return "";
   }
 
   try {
-    return Boolean(getBlockedHttpFromHttpsPageMessage(new URL(proxyUrl)));
+    const url = new URL(proxyUrl);
+    return url.protocol === "https:" ? "" : "Proxy URL must use HTTPS. Update REDMINE.proxyUrl in app.js.";
   } catch (error) {
-    return false;
+    return "Proxy URL is invalid. Update REDMINE.proxyUrl in app.js.";
   }
 }
 
@@ -1518,6 +1476,47 @@ function startOfDay(value) {
   return date;
 }
 
+function renderDashboardLists() {
+  renderDashboardList("processing");
+  renderDashboardList("notStarted");
+  renderDashboardList("processed");
+}
+
+function renderDashboardList(name) {
+  renderList(name, getVisibleDashboardIssues(name));
+}
+
+function getVisibleDashboardIssues(name) {
+  const issues = dashboardLists[name] || [];
+  if (name === "notStarted" && hideNotStartedNonDevelopment) {
+    return issues.filter((issue) => getTrackerName(issue) === TRACKER_NAMES.development);
+  }
+  if (name === "processed" && hideProcessedResearch) {
+    return issues.filter((issue) => getTrackerName(issue) !== TRACKER_NAMES.research);
+  }
+  return issues;
+}
+
+function getDashboardListColspan(name) {
+  return name === "processing" ? 9 : 10;
+}
+
+function getDashboardReloadButton(name) {
+  return {
+    processing: els.reloadProcessing,
+    notStarted: els.reloadNotStarted,
+    processed: els.reloadProcessed,
+  }[name];
+}
+
+function getDashboardListLabel(name) {
+  return {
+    processing: "Processing",
+    notStarted: "Not started",
+    processed: "Processed",
+  }[name];
+}
+
 function renderList(name, issues) {
   const rowsEl = els[`${name}Rows`];
   const countEl = els[`${name}Count`];
@@ -1527,7 +1526,7 @@ function renderList(name, issues) {
   infoEl.textContent = `${issues.length} issue`;
 
   if (!issues.length) {
-    const colspan = name === "processing" ? 9 : 10;
+    const colspan = getDashboardListColspan(name);
     rowsEl.innerHTML = `<tr><td colspan="${colspan}" class="empty-cell">No matching issues.</td></tr>`;
     return;
   }
@@ -1560,14 +1559,14 @@ function renderDailyReport(issues, isLoaded = false) {
 
 function groupDailyReportIssues(issues) {
   const groups = new Map(DAILY_REPORT_ASSIGNEES.map((assignee) => [assignee.id, []]));
-  groups.set(DAILY_REPORT_OTHER_KEY, []);
+  groups.set(DAILY_REPORT_OTHER.key, []);
 
   issues.forEach((issue) => {
     const assigneeId = Number(issue.assigned_to && issue.assigned_to.id);
     if (groups.has(assigneeId)) {
       groups.get(assigneeId).push(issue);
-    } else if (assigneeId === DAILY_REPORT_OTHER_ASSIGNEE_ID && getTrackerName(issue) === DAILY_REPORT_OTHER_TRACKER) {
-      groups.get(DAILY_REPORT_OTHER_KEY).push(issue);
+    } else if (assigneeId === DAILY_REPORT_OTHER.assigneeId && getTrackerName(issue) === DAILY_REPORT_OTHER.tracker) {
+      groups.get(DAILY_REPORT_OTHER.key).push(issue);
     }
   });
 
@@ -1605,7 +1604,7 @@ function buildDailyReportHtml(groupedIssues) {
   });
 
   lines.push("", "■その他");
-  const otherIssues = groupedIssues.get(DAILY_REPORT_OTHER_KEY) || [];
+  const otherIssues = groupedIssues.get(DAILY_REPORT_OTHER.key) || [];
   otherIssues.forEach((issue, index) => {
     const number = CIRCLED_NUMBERS[index] || `${index + 1}.`;
     lines.push(
@@ -1728,7 +1727,7 @@ function getSelectedReportLists() {
 }
 
 function getIssueUrl(issue) {
-  const baseUrl = normalizeBaseUrl(config.baseUrl || "");
+  const baseUrl = normalizeBaseUrl(REDMINE.baseUrl);
   return baseUrl && issue && issue.id ? `${baseUrl}/issues/${issue.id}` : "#";
 }
 
@@ -1796,10 +1795,10 @@ function getNotStartedIssueHighlightClass(issue) {
 }
 
 function getTaskIssueHighlightClass(issue) {
-  if (isStatus(issue, STATUS_NAMES.processing)) {
+  if (isStatus(issue, ISSUE_STATUS.processing.name)) {
     return getProcessingIssueHighlightClass(issue);
   }
-  if (isStatus(issue, STATUS_NAMES.notStarted)) {
+  if (isStatus(issue, ISSUE_STATUS.notStarted.name)) {
     return getNotStartedIssueHighlightClass(issue);
   }
   return "";
@@ -1984,9 +1983,23 @@ function timeEntryDetail(entry, hasUser114SpentTime) {
 
 function renderError(message) {
   const safeMessage = escapeHtml(message);
+  els.processingCount.textContent = "0";
+  els.notStartedCount.textContent = "0";
+  els.processedCount.textContent = "0";
+  els.processingInfo.textContent = "0 issue";
+  els.notStartedInfo.textContent = "0 issue";
+  els.processedInfo.textContent = "0 issue";
   els.processingRows.innerHTML = `<tr><td colspan="9" class="empty-cell">${safeMessage}</td></tr>`;
   els.notStartedRows.innerHTML = `<tr><td colspan="10" class="empty-cell">${safeMessage}</td></tr>`;
   els.processedRows.innerHTML = `<tr><td colspan="10" class="empty-cell">${safeMessage}</td></tr>`;
+}
+
+function renderDashboardListError(name, message) {
+  const safeMessage = escapeHtml(message);
+  dashboardLists[name] = [];
+  els[`${name}Count`].textContent = "0";
+  els[`${name}Info`].textContent = "0 issue";
+  els[`${name}Rows`].innerHTML = `<tr><td colspan="${getDashboardListColspan(name)}" class="empty-cell">${safeMessage}</td></tr>`;
 }
 
 function renderMyTaskError(message) {
@@ -2100,7 +2113,7 @@ function normalizeBaseUrl(value) {
 }
 
 function getApiBaseUrl() {
-  return config.proxyUrl || config.baseUrl || "";
+  return REDMINE.proxyUrl || REDMINE.baseUrl || "";
 }
 
 function escapeHtml(value) {

@@ -1,0 +1,7 @@
+name = "redmine-https-proxy"
+main = "src/index.js"
+compatibility_date = "2026-06-11"
+
+[vars]
+REDMINE_BASE_URL = "https://redmine.wdm.co.jp"
+ALLOWED_ORIGINS = "https://quangkhoi.github.io,null"

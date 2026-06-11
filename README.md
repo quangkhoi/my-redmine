@@ -10,7 +10,7 @@ Trang web tĩnh để lấy issue từ Redmine REST API và hiển thị theo c�
 
 ## Cách chạy
 
-Repo này có thể public trên GitHub Pages. Không commit API key, Basic Auth username/password hoặc file proxy thật.
+Repo này có thể public trên GitHub Pages. Không commit API key hoặc Basic Auth username/password.
 
 Mở GitHub Pages hoặc mở file local:
 
@@ -18,106 +18,56 @@ Mở GitHub Pages hoặc mở file local:
 C:\workspace\my-redmine\index.html
 ```
 
-Khi cần load data, nhập Redmine URL/API key/Basic Auth trong panel `Redmine Config`. Các giá trị này chỉ lưu trong `sessionStorage` của tab trình duyệt.
+App dùng Cloudflare Worker HTTPS proxy mặc định được định nghĩa trong `app.js`. API key và Basic Auth được lưu bằng Cloudflare Worker secrets, không nhập trên UI.
 
-Nếu Redmine chặn CORS, tạo proxy local từ file mẫu:
-
-```powershell
-Copy-Item C:\workspace\my-redmine\proxy.example.ps1 C:\workspace\my-redmine\proxy.ps1
-```
-
-Sửa `proxy.ps1` bằng credential thật, rồi chạy proxy local:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File C:\workspace\my-redmine\proxy.ps1
-```
-
-Hoặc chạy file nếu `proxy.ps1` đã tồn tại:
-
-```text
-C:\workspace\my-redmine\start-proxy.bat
-```
-
-Để nút `Chạy lại proxy` trong web tự gọi file proxy, chạy một lần:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File C:\workspace\my-redmine\install-proxy-protocol.ps1
-```
-
-Sau đó mở file `index.html` bằng trình duyệt:
-
-```text
-C:\workspace\my-redmine\index.html
-```
-
-Không cần cài server hoặc build tool.
+Không cần cài server local hoặc build tool cho phần web UI.
 
 ## Cấu hình
 
-`config.example.js` chứa cấu hình public không có secret. Nếu muốn dùng config local thay vì nhập trên UI, copy file mẫu:
-
-```powershell
-Copy-Item C:\workspace\my-redmine\config.example.js C:\workspace\my-redmine\config.js
-```
-
-Sau đó sửa `config.js` trên máy local:
+Các cấu hình cố định nằm trong `app.js`:
 
 ```js
-window.REDMINE_CONFIG = {
+const REDMINE = {
   baseUrl: "https://redmine.wdm.co.jp/",
-  proxyUrl: "http://127.0.0.1:8787",
-  apiKey: "your-api-key",
-  basicAuth: {
-    username: "your-basic-auth-user",
-    password: "your-basic-auth-password",
-  },
-  statuses: {
-    processing: "処理中",
-    notStarted: "未対応",
-    processed: "処理済み",
-  },
-  statusIds: {
-    processing: 2,
-    notStarted: 1,
-    processed: 3,
-  },
-  allowedLogins: ["duydinh", "khoiduong@freec.asia"],
-  allowedAssigneeIds: [123, 456],
+  proxyUrl: "https://redmine-https-proxy.qkhoiwork.workers.dev",
 };
 ```
 
-`config.js` và `proxy.ps1` nằm trong `.gitignore`, không được push lên GitHub.
+Nếu đổi Worker URL, sửa `REDMINE.proxyUrl` trong `app.js`.
 
-`allowedAssigneeIds` dùng khi tài khoản API không có quyền đọc `/users.json` để tự map login sang user id.
+## Cloudflare Worker HTTPS Proxy
+
+Nếu Redmine không cho trình duyệt gọi API trực tiếp, dùng Worker trong thư mục:
+
+```text
+C:\workspace\my-redmine\cloudflare-worker
+```
+
+Xem hướng dẫn deploy tại:
+
+```text
+C:\workspace\my-redmine\cloudflare-worker\README.md
+```
+
+Sau khi deploy Worker mới, cập nhật `REDMINE.proxyUrl` trong `app.js`.
 
 ## GitHub Pages
 
-Trong GitHub repo, vào `Settings` > `Pages`, chọn source branch `master` và folder `/ (root)`. Page public sẽ mở được UI, nhưng không có credential trong source. Người dùng cần nhập credential trên panel `Redmine Config` hoặc chạy proxy local.
+Trong GitHub repo, vào `Settings` > `Pages`, chọn source branch `master` và folder `/ (root)`. Page public sẽ mở được UI, nhưng không có credential trong source. Người dùng cần cấu hình Cloudflare Worker HTTPS proxy.
 
 ## Dash board
 
-Dashboard hiển thị 3 danh sách, cùng thứ tự cột:
+Dashboard hiển thị 3 danh sách:
 
-```text
-id, project, subject, assignee, status, start date, due date, % done
-```
+- `Processing`
+- `Not started`
+- `Processed`
 
-Tất cả danh sách được sort theo:
-
-```text
-start date, due date, id
-```
-
-Ngày lọc được tính theo ngày hiện tại:
-
-- Thứ 2 tuần trước: dùng cho `start date >=`.
-- Thứ 6 tuần sau: dùng cho `due date <=` ở danh sách `未対応`.
-- Danh sách `処理済み` loại các issue có `% done = 100`.
-- Dữ liệu được lấy theo `assigned_to_id` trong `allowedAssigneeIds`.
+Dữ liệu được lấy theo danh sách user ID định nghĩa trong `app.js`.
 
 ## Lưu ý CORS
 
-Nếu Redmine không cho trình duyệt gọi API trực tiếp, bạn sẽ thấy lỗi CORS. Khi đó cần bật CORS trên Redmine hoặc dùng proxy nội bộ.
+Nếu Redmine không cho trình duyệt gọi API trực tiếp, bạn sẽ thấy lỗi CORS. Khi đó cần bật CORS trên Redmine hoặc dùng Cloudflare Worker HTTPS proxy.
 
 ## Lưu ý 401 Unauthorized
 
@@ -125,6 +75,5 @@ Nếu `https://redmine.wdm.co.jp/` trả `401 Unauthorized` trước khi vào đ
 
 Khi đó cần một trong các cách sau:
 
-- Cấu hình server/proxy cho phép gọi `/issues.json` bằng API key.
-- Cung cấp cơ chế proxy nội bộ thêm xác thực server trước khi chuyển tiếp request tới Redmine.
+- Cấu hình Cloudflare Worker HTTPS proxy cho phép gọi Redmine API bằng API key và Basic Auth.
 - Mở API từ cùng domain đã đăng nhập và bật CORS phù hợp nếu vẫn gọi trực tiếp bằng trình duyệt.
