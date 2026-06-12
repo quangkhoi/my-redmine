@@ -832,7 +832,7 @@ async function fetchDailyReportIssues() {
   const filteredTodayIssues = todayIssues.filter(
     (issue) => Number(issue.assigned_to && issue.assigned_to.id) !== DAILY_REPORT_OTHER.assigneeId
   );
-  const filteredProcessingIssues = processingIssues.filter((issue) => Number(issue.done_ratio) < 90);
+  const filteredProcessingIssues = processingIssues.filter((issue) => Number(issue.done_ratio) <= 90);
   const filteredOtherIssues = otherIssues.filter(
     (issue) =>
       Number(issue.assigned_to && issue.assigned_to.id) === DAILY_REPORT_OTHER.assigneeId &&
