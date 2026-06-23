@@ -542,10 +542,10 @@ function exportReport() {
     return;
   }
 
-  const selectedRange = loadedReportLists.range || getSelectedReportRange();
-  const rangeLabel = formatMonthDayRange(selectedRange.from, selectedRange.to);
+  const exportRange = loadedReportLists.exportRange || getWeeklyReportExportRange();
+  const rangeLabel = formatMonthDayRange(exportRange.from, exportRange.to);
   const sheetName = `Report (${rangeLabel})`;
-  const reportTitle = `週報（${formatJapaneseDateRange(selectedRange.from, selectedRange.to)}）`;
+  const reportTitle = `週報（${formatJapaneseDateRange(exportRange.from, exportRange.to)}）`;
   const sheet = buildReportSheet(getSelectedReportLists(), reportTitle);
   const workbook = window.XLSX.utils.book_new();
   window.XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
@@ -589,7 +589,7 @@ async function fetchReportLists() {
   const csharpAssigneeIds = [106, 94, 99];
   const webAssigneeIds = [123];
   const currentPromises = [
-    fetchReportList({ assigneeIds: csharpAssigneeIds, range: ranges.current }),
+    fetchCurrentCsharpReportList(csharpAssigneeIds, ranges.current),
     fetchReportList({ assigneeIds: webAssigneeIds, range: ranges.current }),
   ];
   const previousPromises = ranges.hasPrevious
@@ -610,16 +610,31 @@ async function fetchReportLists() {
     currentWeb,
     hasPrevious: ranges.hasPrevious,
     range: ranges.selected,
+    exportRange: { from: ranges.selected.from, to: ranges.previous.friday },
   };
 }
 
-async function fetchReportList({ assigneeIds, range, dueDateFrom }) {
+async function fetchCurrentCsharpReportList(assigneeIds, range) {
+  const [teamIssues, user114Issues] = await Promise.all([
+    fetchReportList({ assigneeIds, range }),
+    fetchReportList({
+      assigneeIds: [114],
+      range,
+      issueFilter: (issue) => getTrackerName(issue) === TRACKER_NAMES.development,
+    }),
+  ]);
+
+  return sortIssues(uniqueIssues(teamIssues.concat(user114Issues)));
+}
+
+async function fetchReportList({ assigneeIds, range, dueDateFrom, issueFilter }) {
   const issues = await fetchIssuesForAssigneeIds(assigneeIds, {
     statusId: "*",
     startDateTo: range.friday,
     dueDateFrom: dueDateFrom || range.monday,
   });
-  const sortedIssues = sortIssues(issues.filter(isWorkItemStatusIssue));
+  const filteredIssues = issues.filter(isWorkItemStatusIssue).filter(issueFilter || (() => true));
+  const sortedIssues = sortIssues(filteredIssues);
   const spentHoursByIssueId = await fetchSpentHoursForIssues(sortedIssues, {
     from: range.monday,
     to: range.friday,
@@ -1439,6 +1454,11 @@ function getSelectedReportRange() {
     from: parseInputDate(els.reportFromDate.value),
     to: parseInputDate(els.reportToDate.value),
   };
+}
+
+function getWeeklyReportExportRange() {
+  const ranges = getSelectedReportRanges();
+  return { from: ranges.selected.from, to: ranges.previous.friday };
 }
 
 function getSelectedReportRanges() {
