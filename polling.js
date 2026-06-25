@@ -3,6 +3,10 @@ const WATCH_DATE_KEY = "myRedmineWatchDate";
 const WATCH_SEEN_IDS_KEY = "myRedmineSeenIds";
 const WATCH_COUNT_KEY = "myRedmineWatchCount";
 const WATCH_ISSUES_KEY = "myRedmineUpdatedIssues";
+const NOTIF_PERM_KEY = "myRedmineNotifPerm";
+
+const FAVICON_NORMAL = "./favicon.svg";
+const FAVICON_BADGE = "./favicon-badge.svg";
 
 const elsWatch = {
   toggle: document.querySelector("#watchToggle"),
@@ -15,6 +19,59 @@ const elsWatch = {
 
 let watchTimer = null;
 let pollScheduled = false;
+
+function requestNotificationPermission() {
+  if (!("Notification" in window)) {
+    return;
+  }
+  if (Notification.permission === "granted") {
+    return;
+  }
+  if (Notification.permission === "denied") {
+    return;
+  }
+  Notification.requestPermission();
+}
+
+function showUpdateNotification(count) {
+  if (!("Notification" in window)) {
+    return;
+  }
+  if (Notification.permission !== "granted") {
+    return;
+  }
+  const title = count === 1 ? "1 issue updated" : `${count} issues updated`;
+  try {
+    const n = new Notification(title, {
+      body: "Click to view on Redmine Dashboard",
+      icon: FAVICON_BADGE,
+      tag: "redmine-watch",
+      renotify: true,
+    });
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
+  } catch {}
+}
+
+function setFaviconBadge() {
+  const link = document.querySelector("link[rel~='icon']");
+  if (link && link.href !== FAVICON_BADGE) {
+    link.href = FAVICON_BADGE;
+  }
+}
+
+function clearFaviconBadge() {
+  const link = document.querySelector("link[rel~='icon']");
+  if (link && link.href !== FAVICON_NORMAL) {
+    link.href = FAVICON_NORMAL;
+  }
+}
+
+function updateTitle(count) {
+  document.title = count > 0 ? `(${count}) Redmine Dashboard` : "Redmine Dashboard";
+}
 
 function initPolling() {
   try {
@@ -77,6 +134,7 @@ function saveWatchConfig() {
 function toggleWatch() {
   saveWatchConfig();
   if (elsWatch.toggle.checked) {
+    requestNotificationPermission();
     startPolling();
   } else {
     stopPolling();
@@ -84,7 +142,9 @@ function toggleWatch() {
     localStorage.setItem(WATCH_COUNT_KEY, "0");
     localStorage.removeItem(WATCH_ISSUES_KEY);
     hideBadge();
+    updateTitle(0);
     hideUpdatedSection();
+    clearFaviconBadge();
   }
 }
 
@@ -161,6 +221,8 @@ function restoreWatchState() {
     if (count > 0) {
       newIssueCount = count;
       showBadge(count);
+      updateTitle(count);
+      setFaviconBadge();
       renderUpdatedSection();
     }
   } catch {}
@@ -220,6 +282,9 @@ async function checkForUpdates() {
       newIssueCount = total;
       localStorage.setItem(WATCH_COUNT_KEY, String(total));
       showBadge(total);
+      updateTitle(total);
+      setFaviconBadge();
+      showUpdateNotification(newIssues.length);
       renderUpdatedSection();
       setStatus(`Watch: ${newIssues.length} new issue(s) found.`, "ok");
     } else {
@@ -310,7 +375,9 @@ function dismissUpdates() {
   localStorage.setItem(WATCH_COUNT_KEY, "0");
   localStorage.removeItem(WATCH_ISSUES_KEY);
   hideBadge();
+  updateTitle(0);
   hideUpdatedSection();
+  clearFaviconBadge();
   setStatus(`Dismissed ${issues.length} update(s).`, "ok");
 }
 
@@ -332,13 +399,16 @@ function dismissIssue(id) {
     newIssueCount = kept.length;
     localStorage.setItem(WATCH_COUNT_KEY, String(kept.length));
     showBadge(kept.length);
+    updateTitle(kept.length);
     renderUpdatedSection();
   } else {
     newIssueCount = 0;
     localStorage.setItem(WATCH_COUNT_KEY, "0");
     localStorage.removeItem(WATCH_ISSUES_KEY);
     hideBadge();
+    updateTitle(0);
     hideUpdatedSection();
+    clearFaviconBadge();
   }
 }
 
@@ -371,7 +441,9 @@ function clearBadge() {
   localStorage.setItem(WATCH_COUNT_KEY, "0");
   localStorage.removeItem(WATCH_ISSUES_KEY);
   hideBadge();
+  updateTitle(0);
   hideUpdatedSection();
+  clearFaviconBadge();
 }
 
 let newIssueCount = (() => {
