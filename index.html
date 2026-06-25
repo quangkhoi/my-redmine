@@ -17,7 +17,7 @@
         </button>
         <nav class="nav-list">
           <div class="nav-group active">
-            <button class="nav-item active" type="button" data-view="dashboard">Dashboard</button>
+            <button class="nav-item active" type="button" data-view="dashboard">Dashboard <span class="nav-badge" id="watchBadge"></span></button>
             <div class="nav-panel">
               <div class="sidebar-field">
                 <span>Start date</span>
@@ -31,6 +31,22 @@
                 <input id="dashboardStartDateTo" type="date" />
               </label>
               <button class="sidebar-action" id="loadDashboard" type="button">Load data</button>
+              <hr class="sidebar-divider" />
+              <label class="sidebar-field watch-row">
+                <input id="watchToggle" type="checkbox" checked />
+                <span class="toggle-track"></span>
+                <span>Watch for updates</span>
+              </label>
+              <label class="sidebar-field">
+                <span>Interval</span>
+                <select id="watchInterval">
+                  <option value="1">1 min</option>
+                  <option value="3" selected>3 min</option>
+                  <option value="5">5 min</option>
+                  <option value="10">10 min</option>
+                  <option value="15">15 min</option>
+                </select>
+              </label>
             </div>
           </div>
           <div class="nav-group">
@@ -124,6 +140,36 @@
               <span>Processed</span>
               <strong id="processedCount">0</strong>
             </article>
+          </section>
+
+          <section class="dashboard-list" id="updatedSection" style="display:none" aria-label="Recently updated issues">
+            <div class="list-heading">
+              <div>
+                <h2>Recently Updated</h2>
+              </div>
+              <div class="list-actions">
+                <span id="updatedInfo">0 issue</span>
+                <button class="list-action-button" id="dismissUpdates" type="button">Dismiss all</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>ID</th>
+                    <th>Project</th>
+                    <th>Subject</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th>% done</th>
+                    <th>Updated</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="updatedRows"></tbody>
+              </table>
+            </div>
           </section>
 
           <section class="dashboard-list" aria-label="Processing issue list">
@@ -397,5 +443,6 @@
     <script src="./vendor/xlsx.full.min.js?v=20260609-3"></script>
     <script src="./app.js?v=20260611-13"></script>
     <script src="./schema-config.js?v=20260625-1"></script>
+    <script src="./polling.js?v=20260625-1"></script>
   </body>
 </html>
