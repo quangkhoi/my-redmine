@@ -92,6 +92,13 @@
               <button class="sidebar-action" id="loadLoginTime" type="button">Load data</button>
             </div>
           </div>
+          <div class="nav-group" style="border-top:1px solid var(--line);padding-top:16px;margin-top:8px">
+            <button class="nav-item" type="button" data-view="schema-config">Data Config</button>
+            <div class="nav-panel">
+              <p style="font-size:12px;color:var(--muted);margin:0">Edit table schema overrides saved in browser.</p>
+              <button class="sidebar-action" id="loadSchemaConfig" type="button">Load data</button>
+            </div>
+          </div>
         </nav>
       </aside>
       <button class="collapsed-rail" id="expandSidebar" type="button" aria-controls="appSidebar" aria-label="Open sidebar">
@@ -359,10 +366,36 @@
             </div>
           </section>
         </section>
+
+        <section class="view" id="schemaConfigView" aria-label="Schema Config">
+          <header class="page-header">
+            <p class="eyebrow">Schema Config</p>
+          </header>
+          <section class="dashboard-list" aria-label="Schema configuration">
+            <div class="list-heading">
+              <div>
+                <h2>Database Schema</h2>
+              </div>
+              <div class="list-actions">
+                <span id="schemaConfigInfo">No data</span>
+                <button class="list-action-button" id="saveSchemaConfig" type="button" disabled>Save</button>
+                <button class="list-action-button" id="resetSchemaConfig" type="button" disabled>Reset</button>
+              </div>
+            </div>
+            <div style="padding:18px">
+              <textarea id="schemaConfigEditor" style="width:100%;min-height:400px;font-family:monospace;font-size:13px;border:1px solid var(--line);border-radius:7px;padding:12px;resize:vertical" placeholder='Run fetch_mssql.py first, then click "Load data".' readonly></textarea>
+              <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                <button class="list-action-button" id="importSchemaConfig" type="button">Import JSON</button>
+                <button class="list-action-button" id="exportSchemaConfig" type="button">Export JSON</button>
+              </div>
+            </div>
+          </section>
+        </section>
       </section>
     </main>
 
     <script src="./vendor/xlsx.full.min.js?v=20260609-3"></script>
     <script src="./app.js?v=20260611-13"></script>
+    <script src="./schema-config.js?v=20260625-1"></script>
   </body>
 </html>

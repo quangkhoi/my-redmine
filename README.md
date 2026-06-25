@@ -77,3 +77,15 @@ Khi đó cần một trong các cách sau:
 
 - Cấu hình Cloudflare Worker HTTPS proxy cho phép gọi Redmine API bằng API key và Basic Auth.
 - Mở API từ cùng domain đã đăng nhập và bật CORS phù hợp nếu vẫn gọi trực tiếp bằng trình duyệt.
+
+## Lay danh sach table kem PK
+Cách chạy (1 lần đầu)
+```bash
+  cd scripts
+  npm install
+  cd ..
+  node scripts/fetch-mssql.mjs
+  # Nhập server/database/user/password
+  # → data/tables.json được tạo
+  git add data/tables.json && git commit -m "schema snapshot" && git push
+```

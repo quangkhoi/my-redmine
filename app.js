@@ -264,6 +264,8 @@ function switchView(viewName) {
       ? "myTaskView"
       : viewName === "daily-report"
       ? "dailyReportView"
+      : viewName === "schema-config"
+      ? "schemaConfigView"
       : `${viewName}View`;
   const target = document.querySelector(`#${targetId}`);
   if (target) {
