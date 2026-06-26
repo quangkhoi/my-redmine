@@ -118,7 +118,7 @@ function loadWatchConfig() {
       return JSON.parse(raw);
     }
   } catch {}
-  return { enabled: true, interval: 3 };
+  return { enabled: false, interval: 5 };
 }
 
 function saveWatchConfig() {
