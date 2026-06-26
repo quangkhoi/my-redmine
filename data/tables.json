@@ -1,0 +1,1443 @@
+{
+  "server": "172.31.44.65",
+  "database": "sfp_wdmbase",
+  "totalTables": 223,
+  "fetchedAt": "2026-06-25T06:23:09.248Z",
+  "tables": {
+    "migrations": {
+      "schema": "dbo",
+      "pk": [
+        "id"
+      ]
+    },
+    "t_admin": {
+      "schema": "dbo",
+      "pk": [
+        "adminid"
+      ]
+    },
+    "t_bank": {
+      "schema": "dbo",
+      "pk": [
+        "bankcode"
+      ]
+    },
+    "t_bank_branch": {
+      "schema": "dbo",
+      "pk": [
+        "bankcode",
+        "branchcode"
+      ]
+    },
+    "t_batch_history": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_batch_log": {
+      "schema": "dbo",
+      "pk": [
+        "log_id"
+      ]
+    },
+    "t_batch_log_detail": {
+      "schema": "dbo",
+      "pk": [
+        "log_id",
+        "log_detailno"
+      ]
+    },
+    "t_bill_electric_h": {
+      "schema": "dbo",
+      "pk": [
+        "placeid",
+        "dt_meter_reading",
+        "itemid"
+      ]
+    },
+    "t_bill_electric_l": {
+      "schema": "dbo",
+      "pk": [
+        "placeid",
+        "dt_meter_reading",
+        "itemid"
+      ]
+    },
+    "t_bookmark_admin": {
+      "schema": "dbo",
+      "pk": [
+        "serial",
+        "adminid"
+      ]
+    },
+    "t_buy": {
+      "schema": "dbo",
+      "pk": [
+        "salesid"
+      ]
+    },
+    "t_buy_detail": {
+      "schema": "dbo",
+      "pk": [
+        "salesid",
+        "sales_detailno"
+      ]
+    },
+    "t_buy_electric_l": {
+      "schema": "dbo",
+      "pk": [
+        "placeid",
+        "dt_meter_reading",
+        "itemid"
+      ]
+    },
+    "t_buy_kwh_daily_fast_l": {
+      "schema": "dbo",
+      "pk": [
+        "receiving_point_no",
+        "dt_summary"
+      ]
+    },
+    "t_buy_kwh_daily_l": {
+      "schema": "dbo",
+      "pk": [
+        "receiving_point_no",
+        "dt_summary"
+      ]
+    },
+    "t_buy_kwh_monthly_l": {
+      "schema": "dbo",
+      "pk": [
+        "receiving_point_no",
+        "dt_meter_reading"
+      ]
+    },
+    "t_contract_document": {
+      "schema": "dbo",
+      "pk": [
+        "serialno"
+      ]
+    },
+    "t_crm": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_crm_escalation": {
+      "schema": "dbo",
+      "pk": [
+        "adminid",
+        "serial"
+      ]
+    },
+    "t_crm_publicize": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_document": {
+      "schema": "dbo",
+      "pk": [
+        "serialno"
+      ]
+    },
+    "t_equipment_fit_l": {
+      "schema": "dbo",
+      "pk": [
+        "receiving_point_no"
+      ]
+    },
+    "t_equipment_l": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no"
+      ]
+    },
+    "t_equipment_light_l": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "rank"
+      ]
+    },
+    "t_equipment_transfer_l": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "serial"
+      ]
+    },
+    "t_import_member_high": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_import_member_low": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_information": {
+      "schema": "dbo",
+      "pk": [
+        "serialno"
+      ]
+    },
+    "t_ini_adminpage": {
+      "schema": "dbo",
+      "pk": [
+        "type",
+        "key"
+      ]
+    },
+    "t_ini_mypage": {
+      "schema": "dbo",
+      "pk": [
+        "type",
+        "key"
+      ]
+    },
+    "t_item": {
+      "schema": "dbo",
+      "pk": [
+        "itemid"
+      ]
+    },
+    "t_limit_discount": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_month",
+        "discount_cd"
+      ]
+    },
+    "t_mail_history": {
+      "schema": "dbo",
+      "pk": [
+        "memid",
+        "serial"
+      ]
+    },
+    "t_mail_set_phrase": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_mail_setting": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_max_demand_h": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_month"
+      ]
+    },
+    "t_mem_account": {
+      "schema": "dbo",
+      "pk": [
+        "memid"
+      ]
+    },
+    "t_mem_act_title_history": {
+      "schema": "dbo",
+      "pk": [
+        "memid",
+        "serialno"
+      ]
+    },
+    "t_mem_advance_order": {
+      "schema": "dbo",
+      "pk": [
+        "memid",
+        "itemid"
+      ]
+    },
+    "t_mem_attach": {
+      "schema": "dbo",
+      "pk": [
+        "memid",
+        "serial"
+      ]
+    },
+    "t_mem_autoship": {
+      "schema": "dbo",
+      "pk": [
+        "memid",
+        "itemid"
+      ]
+    },
+    "t_mem_bank_account": {
+      "schema": "dbo",
+      "pk": [
+        "memid"
+      ]
+    },
+    "t_mem_billing": {
+      "schema": "dbo",
+      "pk": [
+        "memid"
+      ]
+    },
+    "t_mem_buy_plan": {
+      "schema": "dbo",
+      "pk": [
+        "placeid",
+        "serial"
+      ]
+    },
+    "t_mem_credit": {
+      "schema": "dbo",
+      "pk": [
+        "memid"
+      ]
+    },
+    "t_mem_eneres_l": {
+      "schema": "dbo",
+      "pk": [
+        "contract_key",
+        "dt_start"
+      ]
+    },
+    "t_mem_feed_point": {
+      "schema": "dbo",
+      "pk": [
+        "placeid"
+      ]
+    },
+    "t_mem_feed_point_l": {
+      "schema": "dbo",
+      "pk": [
+        "placeid"
+      ]
+    },
+    "t_mem_inquiry": {
+      "schema": "dbo",
+      "pk": [
+        "inquiryno",
+        "memid"
+      ]
+    },
+    "t_mem_inquiry_attend": {
+      "schema": "dbo",
+      "pk": [
+        "serialno"
+      ]
+    },
+    "t_mem_logo": {
+      "schema": "dbo",
+      "pk": [
+        "memid",
+        "serial"
+      ]
+    },
+    "t_mem_memo": {
+      "schema": "dbo",
+      "pk": [
+        "memid",
+        "serialno"
+      ]
+    },
+    "t_mem_option": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_mem_other": {
+      "schema": "dbo",
+      "pk": [
+        "memid"
+      ]
+    },
+    "t_mem_point": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_mem_price_plan": {
+      "schema": "dbo",
+      "pk": [
+        "placeid",
+        "serial"
+      ]
+    },
+    "t_mem_price_plan_l": {
+      "schema": "dbo",
+      "pk": [
+        "placeid",
+        "serial"
+      ]
+    },
+    "t_mem_questionnaire": {
+      "schema": "dbo",
+      "pk": [
+        "memid"
+      ]
+    },
+    "t_mem_receiver": {
+      "schema": "dbo",
+      "pk": [
+        "memid"
+      ]
+    },
+    "t_mem_receiving_point": {
+      "schema": "dbo",
+      "pk": [
+        "placeid"
+      ]
+    },
+    "t_mem_registration": {
+      "schema": "dbo",
+      "pk": [
+        "memid"
+      ]
+    },
+    "t_mem_savings_account": {
+      "schema": "dbo",
+      "pk": [
+        "memid"
+      ]
+    },
+    "t_mem_src_name_kana": {
+      "schema": "dbo",
+      "pk": [
+        "memid"
+      ]
+    },
+    "t_mem_title_history": {
+      "schema": "dbo",
+      "pk": [
+        "memid",
+        "serialno"
+      ]
+    },
+    "t_mem_web_group": {
+      "schema": "dbo",
+      "pk": [
+        "serial",
+        "memid",
+        "web_group_id"
+      ]
+    },
+    "t_member": {
+      "schema": "dbo",
+      "pk": [
+        "memid"
+      ]
+    },
+    "t_meter_exchange_h": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_exchange",
+        "meter_section",
+        "exchange_cd"
+      ]
+    },
+    "t_meter_exchange_l": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_exchange",
+        "meter_section",
+        "exchange_cd"
+      ]
+    },
+    "t_meter_h": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_meter_reading",
+        "meter_section",
+        "meter_id"
+      ]
+    },
+    "t_meter_l": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_meter_reading",
+        "meter_section",
+        "meter_id"
+      ]
+    },
+    "t_mst_acc_type": {
+      "schema": "dbo",
+      "pk": [
+        "acc_type"
+      ]
+    },
+    "t_mst_addressee_type": {
+      "schema": "dbo",
+      "pk": [
+        "mem_addressee_type"
+      ]
+    },
+    "t_mst_adjust_price": {
+      "schema": "dbo",
+      "pk": [
+        "adjust_id",
+        "area",
+        "dt_month"
+      ]
+    },
+    "t_mst_adjust_type": {
+      "schema": "dbo",
+      "pk": [
+        "adjust_type"
+      ]
+    },
+    "t_mst_admin_type": {
+      "schema": "dbo",
+      "pk": [
+        "admin_type"
+      ]
+    },
+    "t_mst_area": {
+      "schema": "dbo",
+      "pk": [
+        "country",
+        "area"
+      ]
+    },
+    "t_mst_auto_demand_type": {
+      "schema": "dbo",
+      "pk": [
+        "auto_demand_type"
+      ]
+    },
+    "t_mst_bank_type": {
+      "schema": "dbo",
+      "pk": [
+        "bank_type"
+      ]
+    },
+    "t_mst_batch_message": {
+      "schema": "dbo",
+      "pk": [
+        "messageid"
+      ]
+    },
+    "t_mst_billing_type": {
+      "schema": "dbo",
+      "pk": [
+        "billing_type"
+      ]
+    },
+    "t_mst_business_type": {
+      "schema": "dbo",
+      "pk": [
+        "business_type"
+      ]
+    },
+    "t_mst_buy_plan_l": {
+      "schema": "dbo",
+      "pk": [
+        "planid"
+      ]
+    },
+    "t_mst_card_type": {
+      "schema": "dbo",
+      "pk": [
+        "card_type"
+      ]
+    },
+    "t_mst_commi_adjust_type": {
+      "schema": "dbo",
+      "pk": [
+        "commi_adjust_type"
+      ]
+    },
+    "t_mst_commi_adjustment_low": {
+      "schema": "dbo",
+      "pk": [
+        "area"
+      ]
+    },
+    "t_mst_commi_name": {
+      "schema": "dbo",
+      "pk": [
+        "serialno"
+      ]
+    },
+    "t_mst_commi_status": {
+      "schema": "dbo",
+      "pk": [
+        "commi_status"
+      ]
+    },
+    "t_mst_commi_type": {
+      "schema": "dbo",
+      "pk": [
+        "commi_type"
+      ]
+    },
+    "t_mst_cont_pay_type": {
+      "schema": "dbo",
+      "pk": [
+        "cont_pay_type"
+      ]
+    },
+    "t_mst_cont_type": {
+      "schema": "dbo",
+      "pk": [
+        "cont_type"
+      ]
+    },
+    "t_mst_contents_type": {
+      "schema": "dbo",
+      "pk": [
+        "contents_type"
+      ]
+    },
+    "t_mst_country": {
+      "schema": "dbo",
+      "pk": [
+        "country"
+      ]
+    },
+    "t_mst_crm_category": {
+      "schema": "dbo",
+      "pk": [
+        "top_category",
+        "category"
+      ]
+    },
+    "t_mst_crm_category_template": {
+      "schema": "dbo",
+      "pk": [
+        "top_category",
+        "category",
+        "sub_category"
+      ]
+    },
+    "t_mst_crm_group_type": {
+      "schema": "dbo",
+      "pk": [
+        "crm_group_type"
+      ]
+    },
+    "t_mst_crm_inquiry_type": {
+      "schema": "dbo",
+      "pk": [
+        "inquiry_type"
+      ]
+    },
+    "t_mst_crm_interaction_status": {
+      "schema": "dbo",
+      "pk": [
+        "interaction_status"
+      ]
+    },
+    "t_mst_crm_interrogator_type": {
+      "schema": "dbo",
+      "pk": [
+        "interrogator_type"
+      ]
+    },
+    "t_mst_crm_sub_category": {
+      "schema": "dbo",
+      "pk": [
+        "top_category",
+        "category",
+        "sub_category"
+      ]
+    },
+    "t_mst_crm_top_category": {
+      "schema": "dbo",
+      "pk": [
+        "top_category"
+      ]
+    },
+    "t_mst_delivery_time": {
+      "schema": "dbo",
+      "pk": [
+        "delivery_time_type"
+      ]
+    },
+    "t_mst_delivery_type": {
+      "schema": "dbo",
+      "pk": [
+        "delivery_type"
+      ]
+    },
+    "t_mst_document_type": {
+      "schema": "dbo",
+      "pk": [
+        "document_type"
+      ]
+    },
+    "t_mst_electric_code": {
+      "schema": "dbo",
+      "pk": [
+        "category",
+        "code"
+      ]
+    },
+    "t_mst_family_type": {
+      "schema": "dbo",
+      "pk": [
+        "family_type"
+      ]
+    },
+    "t_mst_feed_point_type": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_type"
+      ]
+    },
+    "t_mst_first_pay_type": {
+      "schema": "dbo",
+      "pk": [
+        "first_pay_type"
+      ]
+    },
+    "t_mst_fuel_cost_price": {
+      "schema": "dbo",
+      "pk": [
+        "fuel_cost_id",
+        "area",
+        "dt_month"
+      ]
+    },
+    "t_mst_gender": {
+      "schema": "dbo",
+      "pk": [
+        "gender"
+      ]
+    },
+    "t_mst_general_code": {
+      "schema": "dbo",
+      "pk": [
+        "category",
+        "code"
+      ]
+    },
+    "t_mst_gmo_status": {
+      "schema": "dbo",
+      "pk": [
+        "gmo_status"
+      ]
+    },
+    "t_mst_holiday": {
+      "schema": "dbo",
+      "pk": [
+        "dt_holiday"
+      ]
+    },
+    "t_mst_inquiry_means_type": {
+      "schema": "dbo",
+      "pk": [
+        "inquiry_means_type"
+      ]
+    },
+    "t_mst_inquiry_status": {
+      "schema": "dbo",
+      "pk": [
+        "inquiry_status"
+      ]
+    },
+    "t_mst_inquiry_type": {
+      "schema": "dbo",
+      "pk": [
+        "inquiry_type"
+      ]
+    },
+    "t_mst_invoice_type": {
+      "schema": "dbo",
+      "pk": [
+        "invoice_type"
+      ]
+    },
+    "t_mst_item_type": {
+      "schema": "dbo",
+      "pk": [
+        "item_type"
+      ]
+    },
+    "t_mst_job": {
+      "schema": "dbo",
+      "pk": [
+        "job"
+      ]
+    },
+    "t_mst_know_type": {
+      "schema": "dbo",
+      "pk": [
+        "know_type"
+      ]
+    },
+    "t_mst_mem_commi_oneshot_type": {
+      "schema": "dbo",
+      "pk": [
+        "oneshot_type"
+      ]
+    },
+    "t_mst_mem_commi_type": {
+      "schema": "dbo",
+      "pk": [
+        "commi_type"
+      ]
+    },
+    "t_mst_mem_status": {
+      "schema": "dbo",
+      "pk": [
+        "mem_status"
+      ]
+    },
+    "t_mst_mem_type": {
+      "schema": "dbo",
+      "pk": [
+        "mem_type"
+      ]
+    },
+    "t_mst_onoff_type": {
+      "schema": "dbo",
+      "pk": [
+        "onoff_type"
+      ]
+    },
+    "t_mst_option1": {
+      "schema": "dbo",
+      "pk": [
+        "option"
+      ]
+    },
+    "t_mst_order_type": {
+      "schema": "dbo",
+      "pk": [
+        "order_type"
+      ]
+    },
+    "t_mst_output_type": {
+      "schema": "dbo",
+      "pk": [
+        "output_type"
+      ]
+    },
+    "t_mst_payment_type": {
+      "schema": "dbo",
+      "pk": [
+        "payment_type"
+      ]
+    },
+    "t_mst_person_type": {
+      "schema": "dbo",
+      "pk": [
+        "person_type"
+      ]
+    },
+    "t_mst_plan": {
+      "schema": "dbo",
+      "pk": [
+        "planid"
+      ]
+    },
+    "t_mst_plan_area": {
+      "schema": "dbo",
+      "pk": [
+        "area"
+      ]
+    },
+    "t_mst_point_type": {
+      "schema": "dbo",
+      "pk": [
+        "point_type"
+      ]
+    },
+    "t_mst_position": {
+      "schema": "dbo",
+      "pk": [
+        "position"
+      ]
+    },
+    "t_mst_pps": {
+      "schema": "dbo",
+      "pk": [
+        "bpcode"
+      ]
+    },
+    "t_mst_prefecture": {
+      "schema": "dbo",
+      "pk": [
+        "country",
+        "prefecture"
+      ]
+    },
+    "t_mst_price_plan_h": {
+      "schema": "dbo",
+      "pk": [
+        "planid"
+      ]
+    },
+    "t_mst_price_plan_l": {
+      "schema": "dbo",
+      "pk": [
+        "planid"
+      ]
+    },
+    "t_mst_priority_type": {
+      "schema": "dbo",
+      "pk": [
+        "priority_type"
+      ]
+    },
+    "t_mst_procurement_price_consignment": {
+      "schema": "dbo",
+      "pk": [
+        "area",
+        "voltage"
+      ]
+    },
+    "t_mst_proposal_type": {
+      "schema": "dbo",
+      "pk": [
+        "proposal_type"
+      ]
+    },
+    "t_mst_receipt_type": {
+      "schema": "dbo",
+      "pk": [
+        "receipt_type"
+      ]
+    },
+    "t_mst_regist_type": {
+      "schema": "dbo",
+      "pk": [
+        "regist_type"
+      ]
+    },
+    "t_mst_relationship_type": {
+      "schema": "dbo",
+      "pk": [
+        "relationship_type"
+      ]
+    },
+    "t_mst_release_type": {
+      "schema": "dbo",
+      "pk": [
+        "release_type"
+      ]
+    },
+    "t_mst_renewable_energy_levy": {
+      "schema": "dbo",
+      "pk": [
+        "dt_year"
+      ]
+    },
+    "t_mst_residence_type": {
+      "schema": "dbo",
+      "pk": [
+        "residence_type"
+      ]
+    },
+    "t_mst_sales_area": {
+      "schema": "dbo",
+      "pk": [
+        "sales_area"
+      ]
+    },
+    "t_mst_sales_office": {
+      "schema": "dbo",
+      "pk": [
+        "office_code"
+      ]
+    },
+    "t_mst_sales_type": {
+      "schema": "dbo",
+      "pk": [
+        "sales_type"
+      ]
+    },
+    "t_mst_saving_day": {
+      "schema": "dbo",
+      "pk": [
+        "saving_day"
+      ]
+    },
+    "t_mst_saving_send_document_type": {
+      "schema": "dbo",
+      "pk": [
+        "saving_send_document_type"
+      ]
+    },
+    "t_mst_savings_account": {
+      "schema": "dbo",
+      "pk": [
+        "savings_account_type"
+      ]
+    },
+    "t_mst_savings_tender": {
+      "schema": "dbo",
+      "pk": [
+        "savings_tender_status"
+      ]
+    },
+    "t_mst_search_dt_sales_type": {
+      "schema": "dbo",
+      "pk": [
+        "dt_sales_type"
+      ]
+    },
+    "t_mst_search_onoff": {
+      "schema": "dbo",
+      "pk": [
+        "s_onoff_type"
+      ]
+    },
+    "t_mst_send_mail_type": {
+      "schema": "dbo",
+      "pk": [
+        "send_mail_type"
+      ]
+    },
+    "t_mst_send_status": {
+      "schema": "dbo",
+      "pk": [
+        "send_status"
+      ]
+    },
+    "t_mst_send_type": {
+      "schema": "dbo",
+      "pk": [
+        "send_type"
+      ]
+    },
+    "t_mst_service_status": {
+      "schema": "dbo",
+      "pk": [
+        "service_status"
+      ]
+    },
+    "t_mst_show": {
+      "schema": "dbo",
+      "pk": [
+        "show_status"
+      ]
+    },
+    "t_mst_tax_type": {
+      "schema": "dbo",
+      "pk": [
+        "tax_type"
+      ]
+    },
+    "t_mst_tel_type": {
+      "schema": "dbo",
+      "pk": [
+        "tel_type"
+      ]
+    },
+    "t_mst_time": {
+      "schema": "dbo",
+      "pk": [
+        "time"
+      ]
+    },
+    "t_mst_title": {
+      "schema": "dbo",
+      "pk": [
+        "titlecode"
+      ]
+    },
+    "t_mst_voucher_type": {
+      "schema": "dbo",
+      "pk": [
+        "mk_voucher_type"
+      ]
+    },
+    "t_mst_warehouse": {
+      "schema": "dbo",
+      "pk": [
+        "warehouse"
+      ]
+    },
+    "t_mst_web_type": {
+      "schema": "dbo",
+      "pk": [
+        "web_type"
+      ]
+    },
+    "t_mypage_menu": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_payment": {
+      "schema": "dbo",
+      "pk": [
+        "serialno"
+      ]
+    },
+    "t_price_spot": {
+      "schema": "dbo",
+      "pk": [
+        "dt_summary",
+        "area"
+      ]
+    },
+    "t_print_file": {
+      "schema": "dbo",
+      "pk": [
+        "file_name",
+        "serial"
+      ]
+    },
+    "t_print_history": {
+      "schema": "dbo",
+      "pk": [
+        "memid",
+        "serial"
+      ]
+    },
+    "t_purchase_kwh": {
+      "schema": "dbo",
+      "pk": [
+        "dt_summary",
+        "supply_type"
+      ]
+    },
+    "t_sales": {
+      "schema": "dbo",
+      "pk": [
+        "salesid"
+      ]
+    },
+    "t_sales_detail": {
+      "schema": "dbo",
+      "pk": [
+        "salesid",
+        "sales_detailno"
+      ]
+    },
+    "t_sales_gmo": {
+      "schema": "dbo",
+      "pk": [
+        "salesid"
+      ]
+    },
+    "t_sales_gmo_request": {
+      "schema": "dbo",
+      "pk": [
+        "memid",
+        "salesid",
+        "bill_no"
+      ]
+    },
+    "t_sales_gmo_result": {
+      "schema": "dbo",
+      "pk": [
+        "bill_no"
+      ]
+    },
+    "t_sales_receipt": {
+      "schema": "dbo",
+      "pk": [
+        "salesid",
+        "serialno"
+      ]
+    },
+    "t_sales_reserve": {
+      "schema": "dbo",
+      "pk": [
+        "memid",
+        "serial"
+      ]
+    },
+    "t_sales_shipping_address": {
+      "schema": "dbo",
+      "pk": [
+        "salesid"
+      ]
+    },
+    "t_schedule": {
+      "schema": "dbo",
+      "pk": [
+        "serialno"
+      ]
+    },
+    "t_seminar": {
+      "schema": "dbo",
+      "pk": [
+        "serialno"
+      ]
+    },
+    "t_senditem": {
+      "schema": "dbo",
+      "pk": [
+        "s_itemid"
+      ]
+    },
+    "t_setstock": {
+      "schema": "dbo",
+      "pk": [
+        "itemid",
+        "stc_itemid"
+      ]
+    },
+    "t_stock": {
+      "schema": "dbo",
+      "pk": [
+        "serialno"
+      ]
+    },
+    "t_stockitem": {
+      "schema": "dbo",
+      "pk": [
+        "stc_itemid"
+      ]
+    },
+    "t_supply_demand_send_time": {
+      "schema": "dbo",
+      "pk": [
+        "dt_send"
+      ]
+    },
+    "t_switching_if_k10310": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "retailer_application_no"
+      ]
+    },
+    "t_switching_if_k10510": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "retailer_application_no"
+      ]
+    },
+    "t_switching_if_k10610": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "retailer_application_no"
+      ]
+    },
+    "t_switching_if_k10710": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "retailer_application_no"
+      ]
+    },
+    "t_switching_if_k10810": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "retailer_application_no"
+      ]
+    },
+    "t_switching_is_k20110": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "retailer_application_no"
+      ]
+    },
+    "t_switching_is_k20210": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "switching_id"
+      ]
+    },
+    "t_switching_is_k20310": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "switching_id"
+      ]
+    },
+    "t_switching_is_k20410": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "switching_id"
+      ]
+    },
+    "t_switching_link": {
+      "schema": "dbo",
+      "pk": [
+        "id"
+      ]
+    },
+    "t_switching_link_h": {
+      "schema": "dbo",
+      "pk": [
+        "id"
+      ]
+    },
+    "t_switching_status": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "retailer_application_no"
+      ]
+    },
+    "t_switching_stop": {
+      "schema": "dbo",
+      "pk": [
+        "area",
+        "dt_start",
+        "dt_end"
+      ]
+    },
+    "t_sys_auth_function": {
+      "schema": "dbo",
+      "pk": [
+        "adminid",
+        "functionid"
+      ]
+    },
+    "t_sys_function": {
+      "schema": "dbo",
+      "pk": [
+        "functionid"
+      ]
+    },
+    "t_sys_menu": {
+      "schema": "dbo",
+      "pk": [
+        "menuid"
+      ]
+    },
+    "t_sys_settings": {
+      "schema": "dbo",
+      "pk": [
+        "id"
+      ]
+    },
+    "t_temp_agreement_high": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_temp_bill_merge_request": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_todo": {
+      "schema": "dbo",
+      "pk": [
+        "serial"
+      ]
+    },
+    "t_used_kwh_daily_fast_h": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_summary"
+      ]
+    },
+    "t_used_kwh_daily_fast_l": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_summary"
+      ]
+    },
+    "t_used_kwh_daily_h": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_summary"
+      ]
+    },
+    "t_used_kwh_daily_l": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_summary"
+      ]
+    },
+    "t_used_kwh_daily_sum_fast_h": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_month"
+      ]
+    },
+    "t_used_kwh_daily_sum_fast_l": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_month"
+      ]
+    },
+    "t_used_kwh_daily_sum_h": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_month"
+      ]
+    },
+    "t_used_kwh_daily_sum_l": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_month"
+      ]
+    },
+    "t_used_kwh_monthly_h": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_meter_reading"
+      ]
+    },
+    "t_used_kwh_monthly_l": {
+      "schema": "dbo",
+      "pk": [
+        "feed_point_no",
+        "dt_meter_reading"
+      ]
+    },
+    "t_used_kwh_switching_h": {
+      "schema": "dbo",
+      "pk": [
+        "placeid",
+        "dt_target"
+      ]
+    },
+    "t_validation_time": {
+      "schema": "dbo",
+      "pk": [
+        "dt_validation"
+      ]
+    },
+    "t_weather": {
+      "schema": "dbo",
+      "pk": [
+        "observationid",
+        "dt_time"
+      ]
+    },
+    "t_weather_observation": {
+      "schema": "dbo",
+      "pk": [
+        "observationid"
+      ]
+    },
+    "t_web_group": {
+      "schema": "dbo",
+      "pk": [
+        "web_group_id"
+      ]
+    }
+  }
+}

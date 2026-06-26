@@ -17,7 +17,7 @@
         </button>
         <nav class="nav-list">
           <div class="nav-group active">
-            <button class="nav-item active" type="button" data-view="dashboard">Dashboard</button>
+            <button class="nav-item active" type="button" data-view="dashboard">Dashboard <span class="nav-badge" id="watchBadge"></span></button>
             <div class="nav-panel">
               <div class="sidebar-field">
                 <span>Start date</span>
@@ -31,6 +31,22 @@
                 <input id="dashboardStartDateTo" type="date" />
               </label>
               <button class="sidebar-action" id="loadDashboard" type="button">Load data</button>
+              <hr class="sidebar-divider" />
+              <label class="sidebar-field watch-row">
+                <input id="watchToggle" type="checkbox" />
+                <span class="toggle-track"></span>
+                <span>Watch for updates</span>
+              </label>
+              <label class="sidebar-field">
+                <span>Interval</span>
+                <select id="watchInterval">
+                  <option value="1">1 min</option>
+                  <option value="3">3 min</option>
+                  <option value="5" selected>5 min</option>
+                  <option value="10">10 min</option>
+                  <option value="15">15 min</option>
+                </select>
+              </label>
             </div>
           </div>
           <div class="nav-group">
@@ -92,6 +108,13 @@
               <button class="sidebar-action" id="loadLoginTime" type="button">Load data</button>
             </div>
           </div>
+          <div class="nav-group" style="border-top:1px solid var(--line);padding-top:16px;margin-top:8px">
+            <button class="nav-item" type="button" data-view="schema-config">Data Config</button>
+            <div class="nav-panel">
+              <p style="font-size:12px;color:var(--muted);margin:0">Edit table schema overrides saved in browser.</p>
+              <button class="sidebar-action" id="loadSchemaConfig" type="button">Load data</button>
+            </div>
+          </div>
         </nav>
       </aside>
       <button class="collapsed-rail" id="expandSidebar" type="button" aria-controls="appSidebar" aria-label="Open sidebar">
@@ -117,6 +140,36 @@
               <span>Processed</span>
               <strong id="processedCount">0</strong>
             </article>
+          </section>
+
+          <section class="dashboard-list" id="updatedSection" style="display:none" aria-label="Recently updated issues">
+            <div class="list-heading">
+              <div>
+                <h2>Recently Updated</h2>
+              </div>
+              <div class="list-actions">
+                <span id="updatedInfo">0 issue</span>
+                <button class="list-action-button" id="dismissUpdates" type="button">Dismiss all</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>ID</th>
+                    <th>Project</th>
+                    <th>Subject</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th>% done</th>
+                    <th>Updated</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="updatedRows"></tbody>
+              </table>
+            </div>
           </section>
 
           <section class="dashboard-list" aria-label="Processing issue list">
@@ -359,10 +412,37 @@
             </div>
           </section>
         </section>
+
+        <section class="view" id="schemaConfigView" aria-label="Schema Config">
+          <header class="page-header">
+            <p class="eyebrow">Schema Config</p>
+          </header>
+          <section class="dashboard-list" aria-label="Schema configuration">
+            <div class="list-heading">
+              <div>
+                <h2>Database Schema</h2>
+              </div>
+              <div class="list-actions">
+                <span id="schemaConfigInfo">No data</span>
+                <button class="list-action-button" id="saveSchemaConfig" type="button" disabled>Save</button>
+                <button class="list-action-button" id="resetSchemaConfig" type="button" disabled>Reset</button>
+              </div>
+            </div>
+            <div style="padding:18px">
+              <textarea id="schemaConfigEditor" style="width:100%;min-height:400px;font-family:monospace;font-size:13px;border:1px solid var(--line);border-radius:7px;padding:12px;resize:vertical" placeholder='Run fetch_mssql.py first, then click "Load data".' readonly></textarea>
+              <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                <button class="list-action-button" id="importSchemaConfig" type="button">Import JSON</button>
+                <button class="list-action-button" id="exportSchemaConfig" type="button">Export JSON</button>
+              </div>
+            </div>
+          </section>
+        </section>
       </section>
     </main>
 
     <script src="./vendor/xlsx.full.min.js?v=20260609-3"></script>
     <script src="./app.js?v=20260611-13"></script>
+    <script src="./schema-config.js?v=20260625-1"></script>
+    <script src="./polling.js?v=20260625-1"></script>
   </body>
 </html>

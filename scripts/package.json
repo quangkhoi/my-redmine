@@ -1,0 +1,8 @@
+{
+  "name": "my-redmine-scripts",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "mssql": "^11.0.0"
+  }
+}
