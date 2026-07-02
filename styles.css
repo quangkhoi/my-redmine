@@ -851,6 +851,13 @@ tbody tr:hover {
   color: var(--warn);
 }
 
+.search-highlight {
+  background: #fff1a8;
+  color: inherit;
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
 .done-bar {
   width: 96px;
   height: 8px;

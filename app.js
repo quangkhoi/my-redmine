@@ -1604,6 +1604,24 @@ function filterIssuesBySearch(issues) {
   return (issues || []).filter((issue) => issueMatchesSearch(issue, term));
 }
 
+function highlightSearchText(value) {
+  const text = value == null || value === "" ? "-" : String(value);
+  const safeText = escapeHtml(text);
+  const term = globalIssueSearchTerm;
+  if (!term) {
+    return safeText;
+  }
+  const escapedTerm = escapeRegExp(escapeHtml(term));
+  if (!escapedTerm) {
+    return safeText;
+  }
+  return safeText.replace(new RegExp(escapedTerm, "ig"), (match) => `<mark class="search-highlight">${match}</mark>`);
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function filterReportListsBySearch(lists) {
   const filtered = Object.assign({}, lists);
   ["prevCsharp", "prevWeb", "currentCsharp", "currentWeb"].forEach((name) => {
@@ -1893,13 +1911,13 @@ function issueRow(issue, index) {
   return `
     <tr class="${rowClass}">
       <td>${index + 1}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
-      <td>${escapeHtml(issue.subject || "-")}</td>
-      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatDate(issue.start_date))}</td>
-      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText((issue.project && issue.project.name) || "-")}</td>
+      <td>${highlightSearchText(issue.subject || "-")}</td>
+      <td>${highlightSearchText((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatDate(issue.start_date))}</td>
+      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${highlightSearchText(formatDate(issue.due_date))}</span></td>
       <td>
         ${done}%
         <div class="done-bar" aria-hidden="true"><span style="width: ${done}%"></span></div>
@@ -1916,14 +1934,14 @@ function notStartedIssueRow(issue, index) {
   return `
     <tr class="${rowClass}">
       <td>${index + 1}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
-      <td>${escapeHtml((issue.tracker && issue.tracker.name) || "-")}</td>
-      <td>${escapeHtml(issue.subject || "-")}</td>
-      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatDate(issue.start_date))}</td>
-      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText((issue.project && issue.project.name) || "-")}</td>
+      <td>${highlightSearchText((issue.tracker && issue.tracker.name) || "-")}</td>
+      <td>${highlightSearchText(issue.subject || "-")}</td>
+      <td>${highlightSearchText((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatDate(issue.start_date))}</td>
+      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${highlightSearchText(formatDate(issue.due_date))}</span></td>
       <td>
         ${done}%
         <div class="done-bar" aria-hidden="true"><span style="width: ${done}%"></span></div>
@@ -2002,13 +2020,13 @@ function processedIssueRow(issue, index) {
   return `
     <tr>
       <td>${index + 1}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
-      <td>${escapeHtml(issue.subject || "-")}</td>
-      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatDate(issue.start_date))}</td>
-      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText((issue.project && issue.project.name) || "-")}</td>
+      <td>${highlightSearchText(issue.subject || "-")}</td>
+      <td>${highlightSearchText((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatDate(issue.start_date))}</td>
+      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${highlightSearchText(formatDate(issue.due_date))}</span></td>
       <td>
         ${done}%
         <div class="done-bar" aria-hidden="true"><span style="width: ${done}%"></span></div>
@@ -2063,13 +2081,13 @@ function reportIssueRow(issue, index, listName) {
           <span>${index + 1}</span>
         </label>
       </td>
-      <td>${escapeHtml((issue.project && issue.project.name) || "")}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml(issue.subject || "")}</td>
-      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatExcelDate(issue.start_date))}</td>
-      <td>${escapeHtml(formatExcelDate(issue.due_date))}</td>
+      <td>${highlightSearchText((issue.project && issue.project.name) || "")}</td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText(issue.subject || "")}</td>
+      <td>${highlightSearchText((issue.assigned_to && issue.assigned_to.name) || "")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatExcelDate(issue.start_date))}</td>
+      <td>${highlightSearchText(formatExcelDate(issue.due_date))}</td>
     </tr>
   `;
 }
@@ -2081,12 +2099,12 @@ function myTaskRow(issue, index) {
   return `
     <tr class="${rowClass}">
       <td>${index + 1}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
-      <td>${escapeHtml(issue.subject || "-")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatDate(issue.start_date))}</td>
-      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText((issue.project && issue.project.name) || "-")}</td>
+      <td>${highlightSearchText(issue.subject || "-")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatDate(issue.start_date))}</td>
+      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${highlightSearchText(formatDate(issue.due_date))}</span></td>
     </tr>
   `;
 }
@@ -2098,13 +2116,13 @@ function loginTimeRow(issue, index) {
   return `
     <tr data-spent-user-ids="${escapeAttr(spentUserIds)}">
       <td>${index + 1}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml(formatHours(issue.loginSpentHours))}</td>
-      <td>${escapeHtml(issue.subject || "-")}</td>
-      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatDate(issue.start_date))}</td>
-      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText(formatHours(issue.loginSpentHours))}</td>
+      <td>${highlightSearchText(issue.subject || "-")}</td>
+      <td>${highlightSearchText((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatDate(issue.start_date))}</td>
+      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${highlightSearchText(formatDate(issue.due_date))}</span></td>
     </tr>
     ${timeEntryDetails(issue.loginSpentEntries || [], spentUserIds)}
   `;
