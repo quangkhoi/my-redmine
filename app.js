@@ -82,6 +82,7 @@ const els = {
   appLayout: document.querySelector(".app-layout"),
   collapseSidebar: document.querySelector("#collapseSidebar"),
   expandSidebar: document.querySelector("#expandSidebar"),
+  globalIssueSearch: document.querySelector("#globalIssueSearch"),
   loadDashboard: document.querySelector("#loadDashboard"),
   loadDailyReport: document.querySelector("#loadDailyReport"),
   copyDailyReport: document.querySelector("#copyDailyReport"),
@@ -136,11 +137,15 @@ const els = {
 
 const dashboardAssigneeIdSet = new Set(DASHBOARD_ASSIGNEE_IDS);
 let hideLoggedTimeTickets = false;
+let globalIssueSearchTerm = "";
 let globalLoadingCount = 0;
 let dashboardLists = { processing: [], notStarted: [], processed: [] };
 let hideNotStartedNonDevelopment = false;
 let hideProcessedResearch = false;
 let loadedReportLists = null;
+let loadedDailyReportIssues = [];
+let loadedMyTaskIssues = [];
+let loadedLoginTimeIssues = [];
 let releaseTargetValueNames = new Map();
 
 function init() {
@@ -153,12 +158,20 @@ function init() {
   renderReportConditions();
   renderLoginTimeConditions();
   renderInitialEmptyLists();
+  syncGlobalIssueSearchValue();
   bindEvents();
+}
+
+function syncGlobalIssueSearchValue() {
+  if (els.globalIssueSearch) {
+    els.globalIssueSearch.value = globalIssueSearchTerm;
+  }
 }
 
 function bindEvents() {
   els.collapseSidebar.addEventListener("click", collapseSidebar);
   els.expandSidebar.addEventListener("click", expandSidebar);
+  els.globalIssueSearch.addEventListener("input", handleGlobalIssueSearchInput);
   els.loadDashboard.addEventListener("click", loadDashboard);
   els.reloadProcessing.addEventListener("click", () => reloadDashboardList("processing"));
   els.reloadNotStarted.addEventListener("click", () => reloadDashboardList("notStarted"));
@@ -186,6 +199,18 @@ function bindEvents() {
   els.navItems.forEach((item) => {
     item.addEventListener("click", () => switchView(item.dataset.view));
   });
+}
+
+function handleGlobalIssueSearchInput() {
+  globalIssueSearchTerm = normalizeSearchTerm(els.globalIssueSearch.value);
+  renderDashboardLists();
+  renderDailyReport(loadedDailyReportIssues, !!loadedDailyReportIssues.length);
+  renderMyTaskList(loadedMyTaskIssues);
+  renderReport(
+    loadedReportLists || { hasPrevious: true, prevCsharp: [], prevWeb: [], currentCsharp: [], currentWeb: [] },
+    0
+  );
+  renderLoginTimeList(loadedLoginTimeIssues);
 }
 
 function requireRuntimeConfig() {
@@ -436,11 +461,12 @@ async function loadMyTask() {
   try {
     requireRuntimeConfig();
     renderMyTaskConditions();
-    const issues = await fetchMyTaskIssues();
-    renderMyTaskList(issues);
+    loadedMyTaskIssues = await fetchMyTaskIssues();
+    renderMyTaskList(loadedMyTaskIssues);
     markLoadButtonAsReload(els.loadMyTask);
-    setStatus(`Loaded ${issues.length} my task issues from Redmine.`, "ok");
+    setStatus(`Loaded ${loadedMyTaskIssues.length} my task issues from Redmine.`, "ok");
   } catch (error) {
+    loadedMyTaskIssues = [];
     renderMyTaskError(error.message);
     setStatus("Could not load my task data", "error");
   } finally {
@@ -459,11 +485,12 @@ async function loadDailyReport() {
 
   try {
     requireRuntimeConfig();
-    const issues = await fetchDailyReportIssues();
-    renderDailyReport(issues, true);
+    loadedDailyReportIssues = await fetchDailyReportIssues();
+    renderDailyReport(loadedDailyReportIssues, true);
     markLoadButtonAsReload(els.loadDailyReport);
-    setStatus(`Loaded ${issues.length} daily report issues from Redmine.`, "ok");
+    setStatus(`Loaded ${loadedDailyReportIssues.length} daily report issues from Redmine.`, "ok");
   } catch (error) {
+    loadedDailyReportIssues = [];
     renderDailyReportError(error.message);
     setStatus("Could not load daily report", "error");
   } finally {
@@ -566,13 +593,14 @@ async function loadLoginTime() {
     requireRuntimeConfig();
 
     renderLoginTimeConditions();
-    const issues = await fetchLoginTimeIssues();
+    loadedLoginTimeIssues = await fetchLoginTimeIssues();
     hideLoggedTimeTickets = false;
     els.toggleLoggedTimeTickets.checked = false;
-    renderLoginTimeList(issues);
+    renderLoginTimeList(loadedLoginTimeIssues);
     markLoadButtonAsReload(els.loadLoginTime);
-    setStatus(`Loaded ${issues.length} log time issues from Redmine.`, "ok");
+    setStatus(`Loaded ${loadedLoginTimeIssues.length} log time issues from Redmine.`, "ok");
   } catch (error) {
+    loadedLoginTimeIssues = [];
     renderLoginTimeError(error.message);
     setStatus("Could not load log time data", "error");
   } finally {
@@ -1545,14 +1573,74 @@ function startOfDay(value) {
   return date;
 }
 
+function normalizeSearchTerm(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function buildIssueSearchText(issue) {
+  if (!issue) {
+    return "";
+  }
+  return [
+    issue.id,
+    issue.subject,
+    issue.project && issue.project.name,
+    issue.assigned_to && issue.assigned_to.name,
+  ]
+    .filter((value) => value != null && String(value).trim() !== "")
+    .map((value) => String(value).toLowerCase())
+    .join(" ");
+}
+
+function issueMatchesSearch(issue, term) {
+  if (!term) {
+    return true;
+  }
+  return buildIssueSearchText(issue).includes(term);
+}
+
+function filterIssuesBySearch(issues) {
+  const term = globalIssueSearchTerm;
+  return (issues || []).filter((issue) => issueMatchesSearch(issue, term));
+}
+
+function highlightSearchText(value) {
+  const text = value == null || value === "" ? "-" : String(value);
+  const safeText = escapeHtml(text);
+  const term = globalIssueSearchTerm;
+  if (!term) {
+    return safeText;
+  }
+  const escapedTerm = escapeRegExp(escapeHtml(term));
+  if (!escapedTerm) {
+    return safeText;
+  }
+  return safeText.replace(new RegExp(escapedTerm, "ig"), (match) => `<mark class="search-highlight">${match}</mark>`);
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function filterReportListsBySearch(lists) {
+  const filtered = Object.assign({}, lists);
+  ["prevCsharp", "prevWeb", "currentCsharp", "currentWeb"].forEach((name) => {
+    filtered[name] = filterIssuesBySearch(filtered[name] || []);
+  });
+  return filtered;
+}
+
 function renderDashboardLists() {
   renderDashboardList("processing");
   renderDashboardList("notStarted");
   renderDashboardList("processed");
+  if (typeof renderUpdatedSection === "function") {
+    renderUpdatedSection();
+  }
 }
 
 function renderDashboardList(name) {
-  renderList(name, getVisibleDashboardIssues(name));
+  renderList(name, filterIssuesBySearch(getVisibleDashboardIssues(name)));
 }
 
 function getVisibleDashboardIssues(name) {
@@ -1609,19 +1697,21 @@ function renderList(name, issues) {
 }
 
 function renderMyTaskList(issues) {
-  els.myTaskInfo.textContent = `${issues.length} issue`;
+  const filteredIssues = filterIssuesBySearch(issues);
+  els.myTaskInfo.textContent = `${filteredIssues.length} issue`;
 
-  if (!issues.length) {
+  if (!filteredIssues.length) {
     els.myTaskRows.innerHTML = '<tr><td colspan="7" class="empty-cell">No matching issues.</td></tr>';
     return;
   }
 
-  els.myTaskRows.innerHTML = issues.map(myTaskRow).join("");
+  els.myTaskRows.innerHTML = filteredIssues.map(myTaskRow).join("");
 }
 
 function renderDailyReport(issues, isLoaded = false) {
-  const groupedIssues = groupDailyReportIssues(issues);
-  els.dailyReportInfo.textContent = `${issues.length} issue`;
+  const filteredIssues = filterIssuesBySearch(issues);
+  const groupedIssues = groupDailyReportIssues(filteredIssues);
+  els.dailyReportInfo.textContent = `${filteredIssues.length} issue`;
   els.dailyReportContent.innerHTML = buildDailyReportHtml(groupedIssues);
   els.copyDailyReport.disabled = !isLoaded;
 }
@@ -1725,15 +1815,16 @@ function copyDailyReportSelection() {
 }
 
 function renderLoginTimeList(issues) {
-  els.loginTimeInfo.textContent = `${issues.length} issue`;
+  const filteredIssues = filterIssuesBySearch(issues);
+  els.loginTimeInfo.textContent = `${filteredIssues.length} issue`;
 
-  if (!issues.length) {
+  if (!filteredIssues.length) {
     els.loginTimeRows.innerHTML = '<tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>';
     applyLogTimeLoggedUserFilter();
     return;
   }
 
-  els.loginTimeRows.innerHTML = issues.map(loginTimeRow).join("");
+  els.loginTimeRows.innerHTML = filteredIssues.map(loginTimeRow).join("");
   applyLogTimeLoggedUserFilter();
 }
 
@@ -1752,24 +1843,30 @@ function applyLogTimeLoggedUserFilter() {
 }
 
 function renderReport(lists, total) {
-  const previousRows = lists.hasPrevious
+  const filteredLists = filterReportListsBySearch(lists || {});
+  const filteredTotal =
+    (filteredLists.prevCsharp || []).length +
+    (filteredLists.prevWeb || []).length +
+    (filteredLists.currentCsharp || []).length +
+    (filteredLists.currentWeb || []).length;
+  const previousRows = (lists && lists.hasPrevious)
     ? [
         reportSectionRow("■先週の作業"),
         reportTeamRow("C#開発"),
-        reportIssueRows("prevCsharp", lists.prevCsharp || []),
+        reportIssueRows("prevCsharp", filteredLists.prevCsharp || []),
         reportTeamRow("WEB開発"),
-        reportIssueRows("prevWeb", lists.prevWeb || []),
+        reportIssueRows("prevWeb", filteredLists.prevWeb || []),
         reportSpacerRow(),
       ]
     : [];
 
-  els.reportInfo.textContent = `${total} issue`;
+  els.reportInfo.textContent = `${filteredTotal} issue`;
   els.reportRows.innerHTML = previousRows.concat([
     reportSectionRow("◆今週の計画"),
     reportTeamRow("C#開発"),
-    reportIssueRows("currentCsharp", lists.currentCsharp || []),
+    reportIssueRows("currentCsharp", filteredLists.currentCsharp || []),
     reportTeamRow("WEB開発"),
-    reportIssueRows("currentWeb", lists.currentWeb || []),
+    reportIssueRows("currentWeb", filteredLists.currentWeb || []),
   ]).join("");
 }
 
@@ -1814,13 +1911,13 @@ function issueRow(issue, index) {
   return `
     <tr class="${rowClass}">
       <td>${index + 1}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
-      <td>${escapeHtml(issue.subject || "-")}</td>
-      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatDate(issue.start_date))}</td>
-      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText((issue.project && issue.project.name) || "-")}</td>
+      <td>${highlightSearchText(issue.subject || "-")}</td>
+      <td>${highlightSearchText((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatDate(issue.start_date))}</td>
+      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${highlightSearchText(formatDate(issue.due_date))}</span></td>
       <td>
         ${done}%
         <div class="done-bar" aria-hidden="true"><span style="width: ${done}%"></span></div>
@@ -1837,14 +1934,14 @@ function notStartedIssueRow(issue, index) {
   return `
     <tr class="${rowClass}">
       <td>${index + 1}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
-      <td>${escapeHtml((issue.tracker && issue.tracker.name) || "-")}</td>
-      <td>${escapeHtml(issue.subject || "-")}</td>
-      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatDate(issue.start_date))}</td>
-      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText((issue.project && issue.project.name) || "-")}</td>
+      <td>${highlightSearchText((issue.tracker && issue.tracker.name) || "-")}</td>
+      <td>${highlightSearchText(issue.subject || "-")}</td>
+      <td>${highlightSearchText((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatDate(issue.start_date))}</td>
+      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${highlightSearchText(formatDate(issue.due_date))}</span></td>
       <td>
         ${done}%
         <div class="done-bar" aria-hidden="true"><span style="width: ${done}%"></span></div>
@@ -1923,13 +2020,13 @@ function processedIssueRow(issue, index) {
   return `
     <tr>
       <td>${index + 1}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
-      <td>${escapeHtml(issue.subject || "-")}</td>
-      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatDate(issue.start_date))}</td>
-      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText((issue.project && issue.project.name) || "-")}</td>
+      <td>${highlightSearchText(issue.subject || "-")}</td>
+      <td>${highlightSearchText((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatDate(issue.start_date))}</td>
+      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${highlightSearchText(formatDate(issue.due_date))}</span></td>
       <td>
         ${done}%
         <div class="done-bar" aria-hidden="true"><span style="width: ${done}%"></span></div>
@@ -1984,13 +2081,13 @@ function reportIssueRow(issue, index, listName) {
           <span>${index + 1}</span>
         </label>
       </td>
-      <td>${escapeHtml((issue.project && issue.project.name) || "")}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml(issue.subject || "")}</td>
-      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatExcelDate(issue.start_date))}</td>
-      <td>${escapeHtml(formatExcelDate(issue.due_date))}</td>
+      <td>${highlightSearchText((issue.project && issue.project.name) || "")}</td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText(issue.subject || "")}</td>
+      <td>${highlightSearchText((issue.assigned_to && issue.assigned_to.name) || "")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatExcelDate(issue.start_date))}</td>
+      <td>${highlightSearchText(formatExcelDate(issue.due_date))}</td>
     </tr>
   `;
 }
@@ -2002,12 +2099,12 @@ function myTaskRow(issue, index) {
   return `
     <tr class="${rowClass}">
       <td>${index + 1}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
-      <td>${escapeHtml(issue.subject || "-")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatDate(issue.start_date))}</td>
-      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText((issue.project && issue.project.name) || "-")}</td>
+      <td>${highlightSearchText(issue.subject || "-")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatDate(issue.start_date))}</td>
+      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${highlightSearchText(formatDate(issue.due_date))}</span></td>
     </tr>
   `;
 }
@@ -2019,13 +2116,13 @@ function loginTimeRow(issue, index) {
   return `
     <tr data-spent-user-ids="${escapeAttr(spentUserIds)}">
       <td>${index + 1}</td>
-      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(issue.id)}</a></td>
-      <td>${escapeHtml(formatHours(issue.loginSpentHours))}</td>
-      <td>${escapeHtml(issue.subject || "-")}</td>
-      <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
-      <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
-      <td>${escapeHtml(formatDate(issue.start_date))}</td>
-      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${escapeHtml(formatDate(issue.due_date))}</span></td>
+      <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
+      <td>${highlightSearchText(formatHours(issue.loginSpentHours))}</td>
+      <td>${highlightSearchText(issue.subject || "-")}</td>
+      <td>${highlightSearchText((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
+      <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${highlightSearchText(formatDate(issue.start_date))}</td>
+      <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${highlightSearchText(formatDate(issue.due_date))}</span></td>
     </tr>
     ${timeEntryDetails(issue.loginSpentEntries || [], spentUserIds)}
   `;

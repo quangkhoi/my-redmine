@@ -339,7 +339,9 @@ function hideBadge() {
 }
 
 function renderUpdatedSection() {
-  const issues = loadUpdatedIssues();
+  const issues = typeof filterIssuesBySearch === "function"
+    ? filterIssuesBySearch(loadUpdatedIssues())
+    : loadUpdatedIssues();
   if (issues.length === 0) {
     hideUpdatedSection();
     return;
