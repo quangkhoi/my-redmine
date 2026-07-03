@@ -6,9 +6,12 @@ using Redmine.Application.Features.DailyReport.Queries.GetDailyReport;
 using Redmine.Application.Features.DailyReport.Services;
 using Redmine.Application.Features.MyTask.Queries.GetMyTask;
 using Redmine.Application.Features.MyTask.Services;
+using Redmine.Application.Features.WeeklyReport.Queries.GetWeeklyReport;
+using Redmine.Application.Features.WeeklyReport.Services;
 using Redmine.Services.Dashboard;
 using Redmine.Services.DailyReport;
 using Redmine.Services.MyTask;
+using Redmine.Services.WeeklyReport;
 
 namespace Redmine.Api.Extensions;
 
@@ -48,6 +51,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IValidator<GetDailyReportQuery>, GetDailyReportQueryValidator>();
         services.AddScoped<GetDailyReportHandler>();
         services.AddScoped<IDailyReportReader, InMemoryDailyReportReader>();
+
+        services.AddScoped<IValidator<GetWeeklyReportQuery>, GetWeeklyReportQueryValidator>();
+        services.AddScoped<GetWeeklyReportHandler>();
+        services.AddScoped<IWeeklyReportReader, InMemoryWeeklyReportReader>();
 
         services.AddHealthChecks();
 

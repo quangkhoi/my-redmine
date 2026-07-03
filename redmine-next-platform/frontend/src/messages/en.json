@@ -25,6 +25,23 @@
     "reportDate": "Snapshot date",
     "userName": "User"
   },
+  "weeklyReport": {
+    "eyebrow": "Weekly Report",
+    "title": "Weekly delivery summary",
+    "description": "A single view for the work completed across the week, ready for later Redmine migration.",
+    "loading": "Loading weekly report...",
+    "empty": "No weekly report entries found.",
+    "weekStart": "Week start",
+    "weekEnd": "Week end",
+    "userName": "User",
+    "columns": {
+      "issue": "Issue",
+      "subject": "Subject",
+      "status": "Status",
+      "day": "Day",
+      "hours": "Hours"
+    }
+  },
   "errors": {
     "unexpected": "Unexpected error."
   }

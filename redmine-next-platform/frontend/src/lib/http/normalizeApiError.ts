@@ -7,7 +7,7 @@ export function normalizeApiError(status: number): string {
     case 403:
       return "You do not have access.";
     case 404:
-      return "The requested task view was not found.";
+      return "The requested report view was not found.";
     default:
       return "Something went wrong.";
   }
