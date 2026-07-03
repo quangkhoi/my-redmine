@@ -10,7 +10,7 @@ type Props = {
 };
 
 export function MyTaskPanel({ eyebrow, title, description }: Props) {
-  const t = useTranslations("home");
+  const t = useTranslations("myTask");
   const { data, state } = useMyTask("alice");
 
   return (

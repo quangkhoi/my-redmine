@@ -16,6 +16,14 @@
     "reportDate": "Report date",
     "userName": "User"
   },
+  "myTask": {
+    "eyebrow": "My Task",
+    "title": "Task lane for today",
+    "description": "Your active issues are loaded from the backend through a single normalized response layer.",
+    "loading": "Loading task list...",
+    "empty": "No tasks found.",
+    "assignedTo": "Assigned to"
+  },
   "dashboard": {
     "eyebrow": "Dashboard",
     "title": "Team overview",
@@ -39,6 +47,21 @@
       "subject": "Subject",
       "status": "Status",
       "day": "Day",
+      "hours": "Hours"
+    }
+  },
+  "logTime": {
+    "eyebrow": "Log Time",
+    "title": "Worklog snapshot",
+    "description": "A compact list of issues with the time already logged against each item.",
+    "loading": "Loading log time...",
+    "empty": "No log time entries found.",
+    "reportDate": "Report date",
+    "userName": "User",
+    "columns": {
+      "issue": "Issue",
+      "subject": "Subject",
+      "status": "Status",
       "hours": "Hours"
     }
   },

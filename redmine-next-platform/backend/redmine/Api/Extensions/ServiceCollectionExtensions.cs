@@ -4,12 +4,15 @@ using Redmine.Application.Features.Dashboard.Queries.GetDashboard;
 using Redmine.Application.Features.Dashboard.Services;
 using Redmine.Application.Features.DailyReport.Queries.GetDailyReport;
 using Redmine.Application.Features.DailyReport.Services;
+using Redmine.Application.Features.LogTime.Queries.GetLogTime;
+using Redmine.Application.Features.LogTime.Services;
 using Redmine.Application.Features.MyTask.Queries.GetMyTask;
 using Redmine.Application.Features.MyTask.Services;
 using Redmine.Application.Features.WeeklyReport.Queries.GetWeeklyReport;
 using Redmine.Application.Features.WeeklyReport.Services;
 using Redmine.Services.Dashboard;
 using Redmine.Services.DailyReport;
+using Redmine.Services.LogTime;
 using Redmine.Services.MyTask;
 using Redmine.Services.WeeklyReport;
 
@@ -51,6 +54,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IValidator<GetDailyReportQuery>, GetDailyReportQueryValidator>();
         services.AddScoped<GetDailyReportHandler>();
         services.AddScoped<IDailyReportReader, InMemoryDailyReportReader>();
+
+        services.AddScoped<IValidator<GetLogTimeQuery>, GetLogTimeQueryValidator>();
+        services.AddScoped<GetLogTimeHandler>();
+        services.AddScoped<ILogTimeReader, InMemoryLogTimeReader>();
 
         services.AddScoped<IValidator<GetWeeklyReportQuery>, GetWeeklyReportQueryValidator>();
         services.AddScoped<GetWeeklyReportHandler>();
