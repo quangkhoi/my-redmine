@@ -16,7 +16,6 @@ export function useDashboard(reportDate: string, userName: string) {
 
   useEffect(() => {
     let active = true;
-    setState({ kind: "loading" });
 
     getDashboard(reportDate, userName).then((result) => {
       if (!active) return;

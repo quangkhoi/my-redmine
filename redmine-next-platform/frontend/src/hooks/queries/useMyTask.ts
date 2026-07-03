@@ -16,7 +16,6 @@ export function useMyTask(userName: string) {
 
   useEffect(() => {
     let active = true;
-    setState({ kind: "loading" });
 
     getMyTask(userName)
       .then((result) => {

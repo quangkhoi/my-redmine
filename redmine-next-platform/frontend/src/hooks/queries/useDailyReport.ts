@@ -16,7 +16,6 @@ export function useDailyReport(reportDate: string, userName: string) {
 
   useEffect(() => {
     let active = true;
-    setState({ kind: "loading" });
 
     getDailyReport(reportDate, userName).then((result) => {
       if (!active) return;
