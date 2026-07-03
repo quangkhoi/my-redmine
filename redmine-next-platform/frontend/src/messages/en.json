@@ -14,7 +14,13 @@
     "loading": "Loading daily report...",
     "empty": "No report entries found.",
     "reportDate": "Report date",
-    "userName": "User"
+    "userName": "User",
+    "columns": {
+      "issue": "Issue",
+      "subject": "Subject",
+      "status": "Status",
+      "hours": "Hours"
+    }
   },
   "myTask": {
     "eyebrow": "My Task",
@@ -22,7 +28,12 @@
     "description": "Your active issues are loaded from the backend through a single normalized response layer.",
     "loading": "Loading task list...",
     "empty": "No tasks found.",
-    "assignedTo": "Assigned to"
+    "assignedTo": "Assigned to",
+    "columns": {
+      "issue": "Issue",
+      "subject": "Subject",
+      "status": "Status"
+    }
   },
   "dashboard": {
     "eyebrow": "Dashboard",

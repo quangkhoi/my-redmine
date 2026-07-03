@@ -13,7 +13,7 @@ export function WeeklyReportPanel({ weekStart, userName }: Props) {
   const { data, state } = useWeeklyReport(weekStart, userName);
 
   return (
-    <section>
+    <section className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur">
       <p className="text-sm uppercase tracking-[0.3em] text-violet-300">{t("eyebrow")}</p>
       <h2 className="mt-4 text-3xl font-semibold">{t("title")}</h2>
       <p className="mt-2 max-w-2xl text-sm text-slate-300">{t("description")}</p>
