@@ -1,9 +1,12 @@
 using FluentValidation;
 using Microsoft.OpenApi.Models;
+using Redmine.Application.Features.Dashboard.Queries.GetDashboard;
+using Redmine.Application.Features.Dashboard.Services;
 using Redmine.Application.Features.DailyReport.Queries.GetDailyReport;
 using Redmine.Application.Features.DailyReport.Services;
 using Redmine.Application.Features.MyTask.Queries.GetMyTask;
 using Redmine.Application.Features.MyTask.Services;
+using Redmine.Services.Dashboard;
 using Redmine.Services.DailyReport;
 using Redmine.Services.MyTask;
 
@@ -37,6 +40,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IValidator<GetMyTaskQuery>, GetMyTaskQueryValidator>();
         services.AddScoped<GetMyTaskHandler>();
         services.AddScoped<IMyTaskReader, InMemoryMyTaskReader>();
+
+        services.AddScoped<IValidator<GetDashboardQuery>, GetDashboardQueryValidator>();
+        services.AddScoped<GetDashboardHandler>();
+        services.AddScoped<IDashboardReader, InMemoryDashboardReader>();
 
         services.AddScoped<IValidator<GetDailyReportQuery>, GetDailyReportQueryValidator>();
         services.AddScoped<GetDailyReportHandler>();

@@ -16,6 +16,15 @@
     "reportDate": "Report date",
     "userName": "User"
   },
+  "dashboard": {
+    "eyebrow": "Dashboard",
+    "title": "Team overview",
+    "description": "A compact summary that combines the user's current work posture into one surface.",
+    "loading": "Loading dashboard...",
+    "empty": "No dashboard data found.",
+    "reportDate": "Snapshot date",
+    "userName": "User"
+  },
   "errors": {
     "unexpected": "Unexpected error."
   }
