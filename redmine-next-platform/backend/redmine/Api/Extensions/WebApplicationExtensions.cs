@@ -10,6 +10,7 @@ public static class WebApplicationExtensions
             app.UseSwaggerUI();
         }
 
+        app.UseCors("Frontend");
         app.UseHttpsRedirection();
         app.MapControllers();
         app.MapHealthChecks("/health");

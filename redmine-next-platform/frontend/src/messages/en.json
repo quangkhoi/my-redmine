@@ -1,0 +1,22 @@
+{
+  "home": {
+    "title": "Task lane for today",
+    "eyebrow": "My Task",
+    "description": "Backend responses are normalized in one shared HTTP layer before the page sees them.",
+    "loading": "Loading task list...",
+    "empty": "No tasks found.",
+    "assignedTo": "Assigned to"
+  },
+  "dailyReport": {
+    "eyebrow": "Daily Report",
+    "title": "Worklog snapshot",
+    "description": "A second feature proves the same backend and frontend contract pattern can scale beyond one screen.",
+    "loading": "Loading daily report...",
+    "empty": "No report entries found.",
+    "reportDate": "Report date",
+    "userName": "User"
+  },
+  "errors": {
+    "unexpected": "Unexpected error."
+  }
+}

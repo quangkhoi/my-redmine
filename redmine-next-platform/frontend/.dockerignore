@@ -1,0 +1,6 @@
+.next
+node_modules
+README.md
+src/**/README.md
+public/**/*.psd
+*.log

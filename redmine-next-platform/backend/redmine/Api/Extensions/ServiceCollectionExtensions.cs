@@ -1,4 +1,11 @@
+using FluentValidation;
 using Microsoft.OpenApi.Models;
+using Redmine.Application.Features.DailyReport.Queries.GetDailyReport;
+using Redmine.Application.Features.DailyReport.Services;
+using Redmine.Application.Features.MyTask.Queries.GetMyTask;
+using Redmine.Application.Features.MyTask.Services;
+using Redmine.Services.DailyReport;
+using Redmine.Services.MyTask;
 
 namespace Redmine.Api.Extensions;
 
@@ -7,6 +14,16 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddControllers();
+        services.AddCors(options =>
+        {
+            options.AddPolicy("Frontend", policy =>
+            {
+                var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+                policy.WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
@@ -16,6 +33,14 @@ public static class ServiceCollectionExtensions
                 Version = "v1"
             });
         });
+
+        services.AddScoped<IValidator<GetMyTaskQuery>, GetMyTaskQueryValidator>();
+        services.AddScoped<GetMyTaskHandler>();
+        services.AddScoped<IMyTaskReader, InMemoryMyTaskReader>();
+
+        services.AddScoped<IValidator<GetDailyReportQuery>, GetDailyReportQueryValidator>();
+        services.AddScoped<GetDailyReportHandler>();
+        services.AddScoped<IDailyReportReader, InMemoryDailyReportReader>();
 
         services.AddHealthChecks();
 
