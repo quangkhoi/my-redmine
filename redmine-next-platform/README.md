@@ -8,6 +8,13 @@ The target system will be:
 - Next.js frontend
 - Docker-based deployment
 
+## Design Principles
+
+- Keep the architecture stable before adding new features.
+- Prefer route groups and shared layouts over page-local shell duplication.
+- Add new features inside existing bounded areas instead of reshaping the app tree.
+- Treat docs and rules as guardrails for future development.
+
 ## Reading Order
 
 1. [project-description.md](project-description.md)
@@ -28,3 +35,6 @@ The target system will be:
 
 Design phase only.
 
+## Frontend Rule of Thumb
+
+If a new feature needs a new route, it should first fit into the existing App Router structure, shared layouts, and feature folders before any new top-level structure is introduced.
