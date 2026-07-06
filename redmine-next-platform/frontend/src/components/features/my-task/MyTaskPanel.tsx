@@ -11,7 +11,7 @@ type Props = {
 
 export function MyTaskPanel({ eyebrow, title, description }: Props) {
   const t = useTranslations("myTask");
-  const { data, state } = useMyTask("alice");
+  const { data, state } = useMyTask("tuyennguyen");
 
   return (
     <section className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur">

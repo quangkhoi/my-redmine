@@ -12,10 +12,10 @@ public sealed class GetMyTaskUseCaseTests
         var reader = new FakeMyTaskReader();
         var handler = new GetMyTaskHandler(reader, new GetMyTaskQueryValidator());
 
-        var result = await handler.Handle(new GetMyTaskQuery("alice"), CancellationToken.None);
+        var result = await handler.Handle(new GetMyTaskQuery("tuyennguyen"), CancellationToken.None);
 
         Assert.True(result.IsT0);
-        Assert.Equal("alice", result.AsT0.UserName);
+        Assert.Equal("tuyennguyen", result.AsT0.UserName);
         Assert.Equal(2, result.AsT0.Items.Count);
     }
 
@@ -23,10 +23,10 @@ public sealed class GetMyTaskUseCaseTests
     {
         public Task<MyTaskSummary?> GetForUserAsync(string userName, CancellationToken cancellationToken)
         {
-            MyTaskSummary? summary = userName == "alice"
+            MyTaskSummary? summary = userName == "tuyennguyen"
                 ? new MyTaskSummary(
-                    "alice",
-                    "Alice Nguyen",
+                    "tuyennguyen",
+                    "tuyennguyen",
                     [
                         new MyTaskItem("RM-101", "Fix login redirect", "In Progress"),
                         new MyTaskItem("RM-102", "Update dashboard cards", "Open")

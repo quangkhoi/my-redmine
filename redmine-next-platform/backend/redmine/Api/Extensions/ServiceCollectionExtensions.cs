@@ -10,11 +10,12 @@ using Redmine.Application.Features.MyTask.Queries.GetMyTask;
 using Redmine.Application.Features.MyTask.Services;
 using Redmine.Application.Features.WeeklyReport.Queries.GetWeeklyReport;
 using Redmine.Application.Features.WeeklyReport.Services;
-using Redmine.Services.Dashboard;
-using Redmine.Services.DailyReport;
-using Redmine.Services.LogTime;
-using Redmine.Services.MyTask;
-using Redmine.Services.WeeklyReport;
+using Redmine.Infrastructure.Features.Dashboard;
+using Redmine.Infrastructure.Features.DailyReport;
+using Redmine.Infrastructure.Features.LogTime;
+using Redmine.Infrastructure.Features.MyTask;
+using Redmine.Infrastructure.Features.WeeklyReport;
+using Redmine.Infrastructure.Redmine;
 
 namespace Redmine.Api.Extensions;
 
@@ -28,9 +29,11 @@ public static class ServiceCollectionExtensions
             options.AddPolicy("Frontend", policy =>
             {
                 var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
                 policy.WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyMethod()
+                    .AllowCredentials();
             });
         });
         services.AddEndpointsApiExplorer();
@@ -43,25 +46,37 @@ public static class ServiceCollectionExtensions
             });
         });
 
+        services.Configure<RedmineApiOptions>(configuration.GetSection("Redmine"));
+        services.AddHttpClient<RedmineApiClient>(client =>
+        {
+            var baseUrl = configuration["Redmine:BaseUrl"];
+            if (!string.IsNullOrWhiteSpace(baseUrl))
+            {
+                client.BaseAddress = new Uri(baseUrl);
+            }
+        });
+
+        services.AddScoped<IRedmineIssueRepository, RedmineIssueRepository>();
+
         services.AddScoped<IValidator<GetMyTaskQuery>, GetMyTaskQueryValidator>();
         services.AddScoped<GetMyTaskHandler>();
-        services.AddScoped<IMyTaskReader, InMemoryMyTaskReader>();
+        services.AddScoped<IMyTaskReader, MyTaskReader>();
 
         services.AddScoped<IValidator<GetDashboardQuery>, GetDashboardQueryValidator>();
         services.AddScoped<GetDashboardHandler>();
-        services.AddScoped<IDashboardReader, InMemoryDashboardReader>();
+        services.AddScoped<IDashboardReader, DashboardReader>();
 
         services.AddScoped<IValidator<GetDailyReportQuery>, GetDailyReportQueryValidator>();
         services.AddScoped<GetDailyReportHandler>();
-        services.AddScoped<IDailyReportReader, InMemoryDailyReportReader>();
+        services.AddScoped<IDailyReportReader, DailyReportReader>();
 
         services.AddScoped<IValidator<GetLogTimeQuery>, GetLogTimeQueryValidator>();
         services.AddScoped<GetLogTimeHandler>();
-        services.AddScoped<ILogTimeReader, InMemoryLogTimeReader>();
+        services.AddScoped<ILogTimeReader, LogTimeReader>();
 
         services.AddScoped<IValidator<GetWeeklyReportQuery>, GetWeeklyReportQueryValidator>();
         services.AddScoped<GetWeeklyReportHandler>();
-        services.AddScoped<IWeeklyReportReader, InMemoryWeeklyReportReader>();
+        services.AddScoped<IWeeklyReportReader, WeeklyReportReader>();
 
         services.AddHealthChecks();
 

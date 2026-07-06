@@ -12,10 +12,10 @@ public sealed class GetDashboardUseCaseTests
         var reader = new FakeDashboardReader();
         var handler = new GetDashboardHandler(reader, new GetDashboardQueryValidator());
 
-        var result = await handler.Handle(new GetDashboardQuery("alice", "2026-07-03"), CancellationToken.None);
+        var result = await handler.Handle(new GetDashboardQuery("tuyennguyen", "2026-07-03"), CancellationToken.None);
 
         Assert.True(result.IsT0);
-        Assert.Equal("alice", result.AsT0.UserName);
+        Assert.Equal("tuyennguyen", result.AsT0.UserName);
         Assert.Equal(2, result.AsT0.Metrics.Count);
     }
 
@@ -23,9 +23,9 @@ public sealed class GetDashboardUseCaseTests
     {
         public Task<DashboardSummary?> GetForUserAsync(string userName, string reportDate, CancellationToken cancellationToken)
         {
-            DashboardSummary? summary = userName == "alice" && reportDate == "2026-07-03"
+            DashboardSummary? summary = userName == "tuyennguyen" && reportDate == "2026-07-03"
                 ? new DashboardSummary(
-                    "alice",
+                    "tuyennguyen",
                     "2026-07-03",
                     [
                         new DashboardMetric("open_issues", "Open issues", 7),

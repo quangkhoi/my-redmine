@@ -11,7 +11,8 @@ public static class LoggingExtensions
             loggerConfiguration
                 .ReadFrom.Configuration(context.Configuration)
                 .ReadFrom.Services(services)
-                .Enrich.FromLogContext();
+                .Enrich.FromLogContext()
+                .WriteTo.Console();
         });
     }
 }
