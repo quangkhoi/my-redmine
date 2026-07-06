@@ -11,7 +11,14 @@ public static class WebApplicationExtensions
         }
 
         app.UseCors("Frontend");
-        app.UseHttpsRedirection();
+
+        // Docker runtime only exposes HTTP. Redirecting to HTTPS there breaks browser calls
+        // before CORS headers can be applied, so keep redirection off unless an HTTPS port exists.
+        if (app.Environment.IsDevelopment() || !string.IsNullOrWhiteSpace(app.Configuration["ASPNETCORE_HTTPS_PORT"]))
+        {
+            app.UseHttpsRedirection();
+        }
+
         app.MapControllers();
         app.MapHealthChecks("/health");
 

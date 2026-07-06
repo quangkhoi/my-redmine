@@ -17,7 +17,7 @@ public sealed class RedmineIssueRepository : IRedmineIssueRepository
 
     public Task<IReadOnlyList<RedmineTimeEntryDto>> GetTimeEntriesAsync(string? spentOn, string? userName, CancellationToken cancellationToken)
     {
-        IReadOnlyList<RedmineTimeEntryDto> entries = [];
-        return Task.FromResult(entries);
+        return _client.GetTimeEntriesAsync(spentOn, userName, cancellationToken)
+            .ContinueWith(static task => (IReadOnlyList<RedmineTimeEntryDto>)task.Result.TimeEntries, cancellationToken);
     }
 }

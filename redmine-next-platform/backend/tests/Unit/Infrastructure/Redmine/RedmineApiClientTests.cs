@@ -79,6 +79,40 @@ public sealed class RedmineApiClientTests
         Assert.True(handler.RequestHeaders.Authorization is not null);
     }
 
+    [Fact]
+    public async Task GetIssueStatusesAsync_RequestsIssueStatusesEndpoint()
+    {
+        var handler = new RecordingHandler();
+        var options = Options.Create(new RedmineApiOptions
+        {
+            BaseUrl = "https://redmine.wdm.co.jp/",
+            ApiKey = "abc123"
+        });
+
+        var client = new RedmineApiClient(new HttpClient(handler), options, NullLogger<RedmineApiClient>.Instance);
+
+        _ = await client.GetIssueStatusesAsync(CancellationToken.None);
+
+        Assert.Equal("https://redmine.wdm.co.jp/issue_statuses.json", handler.RequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task GetCustomFieldsAsync_RequestsCustomFieldsEndpoint()
+    {
+        var handler = new RecordingHandler();
+        var options = Options.Create(new RedmineApiOptions
+        {
+            BaseUrl = "https://redmine.wdm.co.jp/",
+            ApiKey = "abc123"
+        });
+
+        var client = new RedmineApiClient(new HttpClient(handler), options, NullLogger<RedmineApiClient>.Instance);
+
+        _ = await client.GetCustomFieldsAsync(CancellationToken.None);
+
+        Assert.Equal("https://redmine.wdm.co.jp/custom_fields.json", handler.RequestUri!.ToString());
+    }
+
     private sealed class FakeHandler : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

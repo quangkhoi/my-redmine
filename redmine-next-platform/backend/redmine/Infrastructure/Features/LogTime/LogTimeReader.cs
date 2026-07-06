@@ -15,12 +15,9 @@ public sealed class LogTimeReader : ILogTimeReader
 
     public async Task<LogTimeSummary?> GetForUserAsync(string reportDate, string userName, CancellationToken cancellationToken)
     {
-        var issues = await _repository.GetIssuesAsync(new RedmineIssueQuery
-        {
-            SpentOn = reportDate
-        }, cancellationToken);
+        var entries = await _repository.GetTimeEntriesAsync(reportDate, userName, cancellationToken);
 
-        if (issues.Count == 0)
+        if (entries.Count == 0)
         {
             return null;
         }
@@ -29,6 +26,10 @@ public sealed class LogTimeReader : ILogTimeReader
             userName,
             userName,
             reportDate,
-            issues.Select((issue, index) => new LogTimeItem($"RM-{issue.Id}", issue.Subject, issue.Status?.Name ?? "Open", index + 1.0m)).ToList());
+            entries.Select(entry => new LogTimeItem(
+                entry.Issue?.Id is { } issueId ? $"RM-{issueId}" : $"TE-{entry.Id}",
+                entry.Issue?.Subject ?? entry.Comments ?? "Time entry",
+                "Logged",
+                entry.Hours)).ToList());
     }
 }

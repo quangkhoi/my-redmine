@@ -16,7 +16,13 @@ public sealed class MyTaskReader : IMyTaskReader
     public async Task<MyTaskSummary?> GetForUserAsync(string userName, CancellationToken cancellationToken)
     {
         var issues = await _repository.GetIssuesAsync(new RedmineIssueQuery(), cancellationToken);
-        if (issues.Count == 0)
+        var filtered = issues
+            .Where(issue =>
+                string.Equals(issue.AssignedTo?.Name, userName, StringComparison.OrdinalIgnoreCase) &&
+                issue.DoneRatio < 100)
+            .ToList();
+
+        if (filtered.Count == 0)
         {
             return null;
         }
@@ -24,6 +30,6 @@ public sealed class MyTaskReader : IMyTaskReader
         return new MyTaskSummary(
             userName,
             userName,
-            issues.Select(issue => new MyTaskItem($"RM-{issue.Id}", issue.Subject, issue.Status?.Name ?? "Open")).ToList());
+            filtered.Select(issue => new MyTaskItem($"RM-{issue.Id}", issue.Subject, issue.Status?.Name ?? "Open")).ToList());
     }
 }

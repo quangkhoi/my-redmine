@@ -57,6 +57,7 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddScoped<IRedmineIssueRepository, RedmineIssueRepository>();
+        services.AddScoped<IRedmineReferenceDataRepository, RedmineReferenceDataRepository>();
 
         services.AddScoped<IValidator<GetMyTaskQuery>, GetMyTaskQueryValidator>();
         services.AddScoped<GetMyTaskHandler>();
