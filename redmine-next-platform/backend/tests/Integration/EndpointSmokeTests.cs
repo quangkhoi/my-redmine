@@ -53,6 +53,10 @@ public sealed class EndpointSmokeTests : IClassFixture<RedmineApiFactory>
         var response = await _client.GetAsync("/api/daily-report/2026-07-03/tuyennguyen");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("tuyennguyen", payload.RootElement.GetProperty("userName").GetString());
+        Assert.True(payload.RootElement.GetProperty("items").GetArrayLength() > 0);
     }
 
     [Fact]

@@ -8,18 +8,26 @@ public sealed class WeeklyReportReader : IWeeklyReportReader
 {
     private readonly IRedmineIssueRepository _repository;
     private readonly IRedmineReferenceDataRepository _referenceDataRepository;
+    private readonly IRedmineUserDirectory _userDirectory;
 
-    public WeeklyReportReader(IRedmineIssueRepository repository, IRedmineReferenceDataRepository referenceDataRepository)
+    public WeeklyReportReader(IRedmineIssueRepository repository, IRedmineReferenceDataRepository referenceDataRepository, IRedmineUserDirectory userDirectory)
     {
         _repository = repository;
         _referenceDataRepository = referenceDataRepository;
+        _userDirectory = userDirectory;
     }
 
     public async Task<WeeklyReportSummary?> GetForUserAsync(string weekStart, string userName, CancellationToken cancellationToken)
     {
+        if (!_userDirectory.TryResolveUserId(userName, out var userId))
+        {
+            return null;
+        }
+
         var issues = await _repository.GetIssuesAsync(new RedmineIssueQuery
         {
-            UpdatedOn = weekStart
+            UpdatedOn = weekStart,
+            AssignedToId = userId
         }, cancellationToken);
         var statuses = await _referenceDataRepository.GetIssueStatusesAsync(cancellationToken);
         var doneStatusName = FindStatusName(statuses, "処理済み", "Done", "Closed");

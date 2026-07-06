@@ -47,7 +47,8 @@ public static class ServiceCollectionExtensions
         });
 
         services.Configure<RedmineApiOptions>(configuration.GetSection("Redmine"));
-        services.AddHttpClient<RedmineApiClient>(client =>
+        services.Configure<List<RedmineUserMapping>>(configuration.GetSection("Redmine:Users"));
+        services.AddHttpClient<RedmineClientFacade>(client =>
         {
             var baseUrl = configuration["Redmine:BaseUrl"];
             if (!string.IsNullOrWhiteSpace(baseUrl))
@@ -55,6 +56,8 @@ public static class ServiceCollectionExtensions
                 client.BaseAddress = new Uri(baseUrl);
             }
         });
+        services.AddScoped<IRedmineClientFacade>(sp => sp.GetRequiredService<RedmineClientFacade>());
+        services.AddScoped<IRedmineUserDirectory, RedmineUserDirectory>();
 
         services.AddScoped<IRedmineIssueRepository, RedmineIssueRepository>();
         services.AddScoped<IRedmineReferenceDataRepository, RedmineReferenceDataRepository>();

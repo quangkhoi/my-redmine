@@ -1,8 +1,8 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Redmine.Infrastructure.Redmine;
 
 namespace Redmine.Tests.Unit.Infrastructure.Redmine;
@@ -17,7 +17,7 @@ public sealed class RedmineApiClientTests
             BaseUrl = "https://redmine.wdm.co.jp/"
         });
 
-        var client = new RedmineApiClient(new HttpClient(new FakeHandler()), options, NullLogger<RedmineApiClient>.Instance);
+        var client = new RedmineClientFacade(new HttpClient(new FakeHandler()), options, NullLogger<RedmineClientFacade>.Instance);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => client.GetIssuesAsync(new RedmineIssueQuery(), CancellationToken.None));
     }
@@ -32,7 +32,7 @@ public sealed class RedmineApiClientTests
             ApiKey = "abc123"
         });
 
-        var client = new RedmineApiClient(new HttpClient(handler), options, NullLogger<RedmineApiClient>.Instance);
+        var client = new RedmineClientFacade(new HttpClient(handler), options, NullLogger<RedmineClientFacade>.Instance);
 
         _ = await client.GetIssuesAsync(new RedmineIssueQuery { StatusId = 1 }, CancellationToken.None);
 
@@ -50,7 +50,7 @@ public sealed class RedmineApiClientTests
             ApiKey = "abc123"
         });
 
-        var client = new RedmineApiClient(new HttpClient(handler), options, NullLogger<RedmineApiClient>.Instance);
+        var client = new RedmineClientFacade(new HttpClient(handler), options, NullLogger<RedmineClientFacade>.Instance);
 
         var result = await client.GetIssuesAsync(new RedmineIssueQuery(), CancellationToken.None);
 
@@ -70,7 +70,7 @@ public sealed class RedmineApiClientTests
             BasicPass = "pass1"
         });
 
-        var client = new RedmineApiClient(new HttpClient(handler), options, NullLogger<RedmineApiClient>.Instance);
+        var client = new RedmineClientFacade(new HttpClient(handler), options, NullLogger<RedmineClientFacade>.Instance);
 
         _ = await client.GetIssuesAsync(new RedmineIssueQuery { AssignedToId = 99 }, CancellationToken.None);
 
@@ -89,7 +89,7 @@ public sealed class RedmineApiClientTests
             ApiKey = "abc123"
         });
 
-        var client = new RedmineApiClient(new HttpClient(handler), options, NullLogger<RedmineApiClient>.Instance);
+        var client = new RedmineClientFacade(new HttpClient(handler), options, NullLogger<RedmineClientFacade>.Instance);
 
         _ = await client.GetIssueStatusesAsync(CancellationToken.None);
 
@@ -106,7 +106,7 @@ public sealed class RedmineApiClientTests
             ApiKey = "abc123"
         });
 
-        var client = new RedmineApiClient(new HttpClient(handler), options, NullLogger<RedmineApiClient>.Instance);
+        var client = new RedmineClientFacade(new HttpClient(handler), options, NullLogger<RedmineClientFacade>.Instance);
 
         _ = await client.GetCustomFieldsAsync(CancellationToken.None);
 

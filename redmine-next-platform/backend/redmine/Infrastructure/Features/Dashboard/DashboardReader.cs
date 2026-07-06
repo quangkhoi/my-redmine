@@ -8,30 +8,32 @@ public sealed class DashboardReader : IDashboardReader
 {
     private readonly IRedmineIssueRepository _repository;
     private readonly IRedmineReferenceDataRepository _referenceDataRepository;
+    private readonly IRedmineUserDirectory _userDirectory;
 
-    public DashboardReader(IRedmineIssueRepository repository, IRedmineReferenceDataRepository referenceDataRepository)
+    public DashboardReader(IRedmineIssueRepository repository, IRedmineReferenceDataRepository referenceDataRepository, IRedmineUserDirectory userDirectory)
     {
         _repository = repository;
         _referenceDataRepository = referenceDataRepository;
+        _userDirectory = userDirectory;
     }
 
     public async Task<DashboardSummary?> GetForUserAsync(string userName, string reportDate, CancellationToken cancellationToken)
     {
+        if (!_userDirectory.TryResolveUserId(userName, out var userId))
+        {
+            return null;
+        }
+
         var issues = await _repository.GetIssuesAsync(new RedmineIssueQuery
         {
-            UpdatedOn = reportDate
+            AssignedToId = userId
         }, cancellationToken);
-        var myIssues = issues.Where(issue => string.Equals(issue.AssignedTo?.Name, userName, StringComparison.OrdinalIgnoreCase)).ToList();
+        var myIssues = issues.Where(issue => issue.AssignedTo?.Id == userId).ToList();
         var statuses = await _referenceDataRepository.GetIssueStatusesAsync(cancellationToken);
         var customFields = await _referenceDataRepository.GetCustomFieldsAsync(cancellationToken);
         var processingStatusName = FindStatusName(statuses, "処理中", "In Progress");
         var notStartedStatusName = FindStatusName(statuses, "未対応", "Not Started");
-        var releaseTargetField = customFields.FirstOrDefault(field => field.Name == "Release Target");
-
-        if (issues.Count == 0)
-        {
-            return null;
-        }
+        var releaseTargetField = customFields.FirstOrDefault(field => field.Name is "Release Target" or "リリース対象");
 
         var openIssues = myIssues.Count(issue => issue.DoneRatio < 100 || IsStatus(issue, processingStatusName) || IsStatus(issue, notStartedStatusName));
         var hoursLogged = (int)myIssues.Sum(issue => issue.SpentHours ?? 0m);

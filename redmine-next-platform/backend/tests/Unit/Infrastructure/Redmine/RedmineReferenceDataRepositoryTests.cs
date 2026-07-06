@@ -45,7 +45,7 @@ public sealed class RedmineReferenceDataRepositoryTests
         Assert.Equal(1, handler.CallCount);
     }
 
-    private static RedmineApiClient CreateClient(HttpMessageHandler handler)
+    private static RedmineClientFacade CreateClient(HttpMessageHandler handler)
     {
         var options = Options.Create(new RedmineApiOptions
         {
@@ -53,7 +53,7 @@ public sealed class RedmineReferenceDataRepositoryTests
             ApiKey = "abc123"
         });
 
-        return new RedmineApiClient(new HttpClient(handler), options, NullLogger<RedmineApiClient>.Instance);
+        return new RedmineClientFacade(new HttpClient(handler), options, NullLogger<RedmineClientFacade>.Instance);
     }
 
     private sealed class ForbiddenHandler : HttpMessageHandler

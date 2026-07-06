@@ -7,18 +7,25 @@ namespace Redmine.Infrastructure.Features.MyTask;
 public sealed class MyTaskReader : IMyTaskReader
 {
     private readonly IRedmineIssueRepository _repository;
+    private readonly IRedmineUserDirectory _userDirectory;
 
-    public MyTaskReader(IRedmineIssueRepository repository)
+    public MyTaskReader(IRedmineIssueRepository repository, IRedmineUserDirectory userDirectory)
     {
         _repository = repository;
+        _userDirectory = userDirectory;
     }
 
     public async Task<MyTaskSummary?> GetForUserAsync(string userName, CancellationToken cancellationToken)
     {
+        if (!_userDirectory.TryResolveUserId(userName, out var userId))
+        {
+            return null;
+        }
+
         var issues = await _repository.GetIssuesAsync(new RedmineIssueQuery(), cancellationToken);
         var filtered = issues
             .Where(issue =>
-                string.Equals(issue.AssignedTo?.Name, userName, StringComparison.OrdinalIgnoreCase) &&
+                issue.AssignedTo?.Id == userId &&
                 issue.DoneRatio < 100)
             .ToList();
 

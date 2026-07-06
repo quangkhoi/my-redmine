@@ -7,15 +7,22 @@ namespace Redmine.Infrastructure.Features.LogTime;
 public sealed class LogTimeReader : ILogTimeReader
 {
     private readonly IRedmineIssueRepository _repository;
+    private readonly IRedmineUserDirectory _userDirectory;
 
-    public LogTimeReader(IRedmineIssueRepository repository)
+    public LogTimeReader(IRedmineIssueRepository repository, IRedmineUserDirectory userDirectory)
     {
         _repository = repository;
+        _userDirectory = userDirectory;
     }
 
     public async Task<LogTimeSummary?> GetForUserAsync(string reportDate, string userName, CancellationToken cancellationToken)
     {
-        var entries = await _repository.GetTimeEntriesAsync(reportDate, userName, cancellationToken);
+        if (!_userDirectory.TryResolveUserId(userName, out var userId))
+        {
+            return null;
+        }
+
+        var entries = await _repository.GetTimeEntriesAsync(reportDate, userId, cancellationToken);
 
         if (entries.Count == 0)
         {

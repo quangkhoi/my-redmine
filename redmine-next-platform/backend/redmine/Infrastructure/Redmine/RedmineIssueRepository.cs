@@ -2,9 +2,9 @@ namespace Redmine.Infrastructure.Redmine;
 
 public sealed class RedmineIssueRepository : IRedmineIssueRepository
 {
-    private readonly RedmineApiClient _client;
+    private readonly IRedmineClientFacade _client;
 
-    public RedmineIssueRepository(RedmineApiClient client)
+    public RedmineIssueRepository(IRedmineClientFacade client)
     {
         _client = client;
     }
@@ -15,9 +15,6 @@ public sealed class RedmineIssueRepository : IRedmineIssueRepository
         return response.Issues;
     }
 
-    public Task<IReadOnlyList<RedmineTimeEntryDto>> GetTimeEntriesAsync(string? spentOn, string? userName, CancellationToken cancellationToken)
-    {
-        return _client.GetTimeEntriesAsync(spentOn, userName, cancellationToken)
-            .ContinueWith(static task => (IReadOnlyList<RedmineTimeEntryDto>)task.Result.TimeEntries, cancellationToken);
-    }
+    public Task<IReadOnlyList<RedmineTimeEntryDto>> GetTimeEntriesAsync(string? spentOn, int? userId, CancellationToken cancellationToken)
+        => _client.GetTimeEntriesAsync(spentOn, userId, cancellationToken).ContinueWith(static task => (IReadOnlyList<RedmineTimeEntryDto>)task.Result.TimeEntries, cancellationToken);
 }
