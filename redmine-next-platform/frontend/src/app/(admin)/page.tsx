@@ -1,5 +1,5 @@
-import { AdminDashboard } from "@/components/features/dashboard/AdminDashboard";
+import { DashboardIssuesPanel } from "@/components/features/dashboard/DashboardIssuesPanel";
 
 export default function Page() {
-  return <AdminDashboard reportDate="2026-07-03" userName="tuyennguyen" />;
+  return <DashboardIssuesPanel />;
 }

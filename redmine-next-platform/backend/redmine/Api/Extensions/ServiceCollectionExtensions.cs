@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.OpenApi.Models;
 using Redmine.Application.Features.Dashboard.Queries.GetDashboard;
+using Redmine.Application.Features.Dashboard.Queries.GetDashboardIssues;
 using Redmine.Application.Features.Dashboard.Services;
 using Redmine.Application.Features.DailyReport.Queries.GetDailyReport;
 using Redmine.Application.Features.DailyReport.Services;
@@ -69,6 +70,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IValidator<GetDashboardQuery>, GetDashboardQueryValidator>();
         services.AddScoped<GetDashboardHandler>();
         services.AddScoped<IDashboardReader, DashboardReader>();
+
+        services.AddScoped<IValidator<GetDashboardIssuesQuery>, GetDashboardIssuesQueryValidator>();
+        services.AddScoped<GetDashboardIssuesHandler>();
+        services.AddScoped<IDashboardIssueReader, DashboardIssueReader>();
 
         services.AddScoped<IValidator<GetDailyReportQuery>, GetDailyReportQueryValidator>();
         services.AddScoped<GetDailyReportHandler>();
