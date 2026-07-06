@@ -4,7 +4,7 @@ public interface IRedmineClientFacade
 {
     Task<RedmineIssuesResponse> GetIssuesAsync(RedmineIssueQuery query, CancellationToken cancellationToken);
 
-    Task<RedmineTimeEntriesResponse> GetTimeEntriesAsync(string? spentOn, int? userId, CancellationToken cancellationToken);
+    Task<RedmineTimeEntriesResponse> GetTimeEntriesAsync(RedmineTimeEntryQuery query, CancellationToken cancellationToken);
 
     Task<RedmineIssueStatusesResponse> GetIssueStatusesAsync(CancellationToken cancellationToken);
 

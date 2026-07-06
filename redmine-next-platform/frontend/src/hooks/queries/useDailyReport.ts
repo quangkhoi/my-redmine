@@ -21,7 +21,7 @@ export function useDailyReport(reportDate: string, userName: string) {
       if (!active) return;
       if (result.kind === "ok") {
         setData(result.data);
-        setState(result.data.items.length ? { kind: "ready" } : { kind: "empty" });
+        setState(result.data.totalItems ? { kind: "ready" } : { kind: "empty" });
         return;
       }
       setData(null);

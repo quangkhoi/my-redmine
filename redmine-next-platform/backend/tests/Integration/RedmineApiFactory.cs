@@ -47,14 +47,24 @@ public sealed class RedmineApiFactory : WebApplicationFactory<Program>
     private sealed class FakeDailyReportReader : IDailyReportReader
     {
         public Task<DailyReportSummary?> GetForUserAsync(string reportDate, string userName, CancellationToken cancellationToken)
-            => Task.FromResult<DailyReportSummary?>(new DailyReportSummary(reportDate, userName, [
-                new DailyReportItem("RM-1001", "Fix login", "In Progress", 3)
-            ]));
+            => Task.FromResult<DailyReportSummary?>(new DailyReportSummary(
+                reportDate,
+                userName,
+                [
+                    new DailyReportGroup(
+                        "99",
+                        "Tuyen",
+                        99,
+                        [
+                            new DailyReportItem(1001, "RM-1001", "Fix login", "In Progress", "開発", reportDate, "2026-07-08")
+                        ])
+                ],
+                new DailyReportGroup("other", "Other", 114, [])));
     }
 
     private sealed class FakeMyTaskReader : IMyTaskReader
     {
-        public Task<MyTaskSummary?> GetForUserAsync(string userName, CancellationToken cancellationToken)
+        public Task<MyTaskSummary?> GetForUserAsync(string userName, string? startDate, string? endDate, CancellationToken cancellationToken)
             => Task.FromResult<MyTaskSummary?>(new MyTaskSummary(userName, userName, [
                 new MyTaskItem("RM-1001", "Fix login", "In Progress")
             ]));
@@ -71,8 +81,16 @@ public sealed class RedmineApiFactory : WebApplicationFactory<Program>
     private sealed class FakeWeeklyReportReader : IWeeklyReportReader
     {
         public Task<WeeklyReportSummary?> GetForUserAsync(string weekStart, string userName, CancellationToken cancellationToken)
-            => Task.FromResult<WeeklyReportSummary?>(new WeeklyReportSummary(weekStart, "2026-07-09", userName, [
-                new WeeklyReportItem("RM-1001", "Fix login", "In Progress", "Mon", 3)
-            ]));
+            => Task.FromResult<WeeklyReportSummary?>(new WeeklyReportSummary(
+                userName,
+                true,
+                new WeeklyReportRange("2026-06-29", "2026-07-10"),
+                new WeeklyReportRange("2026-06-29", "2026-07-03"),
+                [
+                    new WeeklyReportItem(1001, "RM-1001", "Project", "Fix login", "In Progress", "開発", "2026-06-29", "2026-07-03", 3m)
+                ],
+                [],
+                [],
+                []));
     }
 }

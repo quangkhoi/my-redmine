@@ -16,7 +16,8 @@ public sealed class GetDailyReportUseCaseTests
 
         Assert.True(result.IsT0);
         Assert.Equal("2026-07-03", result.AsT0.ReportDate);
-        Assert.Equal(2, result.AsT0.Items.Count);
+        Assert.Single(result.AsT0.Groups);
+        Assert.Equal(2, result.AsT0.Groups[0].Items.Count);
     }
 
     private sealed class FakeDailyReportReader : IDailyReportReader
@@ -28,12 +29,19 @@ public sealed class GetDailyReportUseCaseTests
                     "2026-07-03",
                     "tuyennguyen",
                     [
-                        new DailyReportItem("RM-201", "Fix mobile nav", "Done", 2),
-                        new DailyReportItem("RM-202", "Refine report layout", "In Progress", 3)
-                    ])
+                        new DailyReportGroup(
+                            "99",
+                            "Tuyen",
+                            99,
+                            [
+                                new DailyReportItem(201, "RM-201", "Fix mobile nav", "Done", "開発", "2026-07-03", "2026-07-08"),
+                                new DailyReportItem(202, "RM-202", "Refine report layout", "In Progress", "開発", "2026-07-03", "2026-07-09")
+                            ])
+                    ],
+                    new DailyReportGroup("other", "Other", 114, []))
                 : null;
 
-            return Task.FromResult(summary);
+            return Task.FromResult<DailyReportSummary?>(summary);
         }
     }
 }

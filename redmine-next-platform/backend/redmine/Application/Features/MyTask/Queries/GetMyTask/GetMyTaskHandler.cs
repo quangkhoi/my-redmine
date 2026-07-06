@@ -23,7 +23,7 @@ public sealed class GetMyTaskHandler
             return new GetMyTaskValidationError(validation.Errors);
         }
 
-        var summary = await _reader.GetForUserAsync(query.UserName, cancellationToken);
+        var summary = await _reader.GetForUserAsync(query.UserName, query.StartDate, query.EndDate, cancellationToken);
         if (summary is null)
         {
             return new GetMyTaskNotFound();

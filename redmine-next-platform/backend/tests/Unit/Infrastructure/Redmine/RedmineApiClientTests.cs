@@ -34,7 +34,7 @@ public sealed class RedmineApiClientTests
 
         var client = new RedmineClientFacade(new HttpClient(handler), options, NullLogger<RedmineClientFacade>.Instance);
 
-        _ = await client.GetIssuesAsync(new RedmineIssueQuery { StatusId = 1 }, CancellationToken.None);
+        _ = await client.GetIssuesAsync(new RedmineIssueQuery { StatusId = "1" }, CancellationToken.None);
 
         Assert.Equal("https://redmine.wdm.co.jp/issues.json?status_id=1", handler.RequestUri!.ToString());
         Assert.Equal("abc123", handler.RequestHeaders.GetValues("X-Redmine-API-Key").Single());
@@ -77,6 +77,72 @@ public sealed class RedmineApiClientTests
         Assert.Equal("https://redmine.wdm.co.jp/issues.json?assigned_to_id=99", handler.RequestUri!.ToString());
         Assert.Equal("abc123", handler.RequestHeaders.GetValues("X-Redmine-API-Key").Single());
         Assert.True(handler.RequestHeaders.Authorization is not null);
+    }
+
+    [Fact]
+    public async Task GetIssuesAsync_BuildsLegacyRangePagingAndSortFilters()
+    {
+        var handler = new RecordingHandler();
+        var options = Options.Create(new RedmineApiOptions
+        {
+            BaseUrl = "https://redmine.wdm.co.jp/",
+            ApiKey = "abc123"
+        });
+
+        var client = new RedmineClientFacade(new HttpClient(handler), options, NullLogger<RedmineClientFacade>.Instance);
+
+        _ = await client.GetIssuesAsync(new RedmineIssueQuery
+        {
+            StatusId = "*",
+            AssignedToId = 99,
+            StartDate = "><2026-07-01|2026-07-03",
+            DueDate = ">=2026-07-01",
+            Sort = "start_date:asc,due_date:asc,id:asc",
+            Limit = 100,
+            Offset = 200
+        }, CancellationToken.None);
+
+        Assert.Equal("https://redmine.wdm.co.jp/issues.json", handler.RequestUri!.GetLeftPart(UriPartial.Path));
+        var issueQuery = Uri.UnescapeDataString(handler.RequestUri.Query);
+        Assert.Contains("status_id=*", issueQuery);
+        Assert.Contains("assigned_to_id=99", issueQuery);
+        Assert.Contains("start_date=><2026-07-01|2026-07-03", issueQuery);
+        Assert.Contains("due_date=>=2026-07-01", issueQuery);
+        Assert.Contains("sort=start_date:asc,due_date:asc,id:asc", issueQuery);
+        Assert.Contains("limit=100", issueQuery);
+        Assert.Contains("offset=200", issueQuery);
+    }
+
+    [Fact]
+    public async Task GetTimeEntriesAsync_BuildsRangePagingAndUserFilters()
+    {
+        var handler = new RecordingTimeEntryHandler();
+        var options = Options.Create(new RedmineApiOptions
+        {
+            BaseUrl = "https://redmine.wdm.co.jp/",
+            ApiKey = "abc123"
+        });
+
+        var client = new RedmineClientFacade(new HttpClient(handler), options, NullLogger<RedmineClientFacade>.Instance);
+
+        _ = await client.GetTimeEntriesAsync(new RedmineTimeEntryQuery
+        {
+            From = "2026-07-01",
+            To = "2026-07-31",
+            UserId = 99,
+            IssueId = 1234,
+            Limit = 100,
+            Offset = 300
+        }, CancellationToken.None);
+
+        Assert.Equal("https://redmine.wdm.co.jp/time_entries.json", handler.RequestUri!.GetLeftPart(UriPartial.Path));
+        var timeEntryQuery = Uri.UnescapeDataString(handler.RequestUri.Query);
+        Assert.Contains("from=2026-07-01", timeEntryQuery);
+        Assert.Contains("to=2026-07-31", timeEntryQuery);
+        Assert.Contains("user_id=99", timeEntryQuery);
+        Assert.Contains("issue_id=1234", timeEntryQuery);
+        Assert.Contains("limit=100", timeEntryQuery);
+        Assert.Contains("offset=300", timeEntryQuery);
     }
 
     [Fact]
@@ -135,6 +201,21 @@ public sealed class RedmineApiClientTests
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent("""{"issues":[],"total_count":0}""", Encoding.UTF8, "application/json")
+            });
+        }
+    }
+
+    private sealed class RecordingTimeEntryHandler : HttpMessageHandler
+    {
+        public Uri? RequestUri { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RequestUri = request.RequestUri;
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{"time_entries":[],"total_count":0}""", Encoding.UTF8, "application/json")
             });
         }
     }

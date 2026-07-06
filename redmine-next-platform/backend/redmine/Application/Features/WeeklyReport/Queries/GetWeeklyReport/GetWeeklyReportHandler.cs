@@ -30,9 +30,25 @@ public sealed class GetWeeklyReportHandler
         }
 
         return new GetWeeklyReportResponse(
-            summary.WeekStart,
-            summary.WeekEnd,
             summary.UserName,
-            summary.Items.Select(item => new GetWeeklyReportItemResponse(item.IssueKey, item.Subject, item.Status, item.Day, item.HoursSpent)).ToList());
+            summary.HasPrevious,
+            new GetWeeklyReportRangeResponse(summary.Range.From, summary.Range.To),
+            new GetWeeklyReportRangeResponse(summary.ExportRange.From, summary.ExportRange.To),
+            summary.PrevCsharp.Select(ToResponse).ToList(),
+            summary.PrevWeb.Select(ToResponse).ToList(),
+            summary.CurrentCsharp.Select(ToResponse).ToList(),
+            summary.CurrentWeb.Select(ToResponse).ToList());
     }
+
+    private static GetWeeklyReportItemResponse ToResponse(Domain.WeeklyReport.WeeklyReportItem item)
+        => new(
+            item.IssueId,
+            item.IssueKey,
+            item.ProjectName,
+            item.Subject,
+            item.Status,
+            item.TrackerName,
+            item.StartDate,
+            item.DueDate,
+            item.ReportSpentHours);
 }

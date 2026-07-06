@@ -26,12 +26,12 @@ export function WeeklyReportPanel({ weekStart, userName }: Props) {
           <div className="space-y-5">
             <div className="flex flex-wrap gap-6">
               <div>
-                <p className="text-sm text-slate-400">{t("weekStart")}</p>
-                <p className="text-lg font-medium">{data.weekStart}</p>
+                <p className="text-sm text-slate-400">Range</p>
+                <p className="text-lg font-medium">{data.range.from} - {data.range.to}</p>
               </div>
               <div>
-                <p className="text-sm text-slate-400">{t("weekEnd")}</p>
-                <p className="text-lg font-medium">{data.weekEnd}</p>
+                <p className="text-sm text-slate-400">Export</p>
+                <p className="text-lg font-medium">{data.exportRange.from} - {data.exportRange.to}</p>
               </div>
               <div>
                 <p className="text-sm text-slate-400">{t("userName")}</p>
@@ -39,29 +39,39 @@ export function WeeklyReportPanel({ weekStart, userName }: Props) {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-white/10">
-              <div className="hidden grid-cols-[1fr_2fr_0.8fr_0.8fr_0.6fr] gap-4 border-b border-white/10 bg-black/30 px-4 py-3 text-xs uppercase tracking-[0.2em] text-slate-400 md:grid">
-                <span>{t("columns.issue")}</span>
-                <span>{t("columns.subject")}</span>
-                <span>{t("columns.status")}</span>
-                <span>{t("columns.day")}</span>
-                <span>{t("columns.hours")}</span>
-              </div>
-              <div className="divide-y divide-white/10">
-                {data.items.map((item) => (
-                  <div key={`${item.issueKey}-${item.day}`} className="grid gap-2 px-4 py-3 text-sm transition hover:bg-white/[0.04] md:grid-cols-[1fr_2fr_0.8fr_0.8fr_0.6fr] md:items-center">
-                    <div className="text-sky-300">{item.issueKey}</div>
-                    <div className="text-white">{item.subject}</div>
-                    <div>
-                      <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-                        {item.status}
-                      </span>
-                    </div>
-                    <div className="text-slate-300">{item.day}</div>
-                    <div className="text-slate-300 tabular-nums">{item.hoursSpent}h</div>
+            <div className="space-y-6">
+              {data.sections.map((section) => (
+                <div key={section.key} className="overflow-hidden rounded-2xl border border-white/10">
+                  <div className="border-b border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-slate-200">
+                    {section.title}
                   </div>
-                ))}
-              </div>
+                  <div className="hidden grid-cols-[0.9fr_1fr_2fr_0.9fr_0.7fr] gap-4 border-b border-white/10 bg-black/20 px-4 py-3 text-xs uppercase tracking-[0.2em] text-slate-400 md:grid">
+                    <span>{t("columns.issue")}</span>
+                    <span>Project</span>
+                    <span>{t("columns.subject")}</span>
+                    <span>{t("columns.status")}</span>
+                    <span>{t("columns.hours")}</span>
+                  </div>
+                  <div className="divide-y divide-white/10">
+                    {section.items.length === 0 && (
+                      <div className="px-4 py-3 text-sm text-slate-400">No issues.</div>
+                    )}
+                    {section.items.map((item) => (
+                      <div key={`${section.key}-${item.issueId}`} className="grid gap-2 px-4 py-3 text-sm transition hover:bg-white/[0.04] md:grid-cols-[0.9fr_1fr_2fr_0.9fr_0.7fr] md:items-center">
+                        <div className="text-sky-300">{item.issueKey}</div>
+                        <div className="text-slate-300">{item.projectName || "-"}</div>
+                        <div className="text-white">{item.subject}</div>
+                        <div>
+                          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
+                            {item.status}
+                          </span>
+                        </div>
+                        <div className="text-slate-300 tabular-nums">{item.reportSpentHours}h</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

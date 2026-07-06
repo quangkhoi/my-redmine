@@ -22,21 +22,50 @@ public sealed class LogTimeReader : ILogTimeReader
             return null;
         }
 
-        var entries = await _repository.GetTimeEntriesAsync(reportDate, userId, cancellationToken);
-
-        if (entries.Count == 0)
+        if (!LegacyRedmineRules.TryParseDate(reportDate, out var reportDay))
         {
             return null;
+        }
+
+        var monthStart = new DateOnly(reportDay.Year, reportDay.Month, 1);
+        var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+        var issues = await _repository.GetIssuesAsync(new RedmineIssueQuery
+        {
+            StatusId = "*",
+            AssignedToId = userId,
+            StartDate = $"<={LegacyRedmineRules.FormatDate(monthEnd)}",
+            DueDate = $">={LegacyRedmineRules.FormatDate(monthStart)}",
+            Sort = "start_date:asc,due_date:asc,id:asc"
+        }, cancellationToken);
+        var filteredIssues = LegacyRedmineRules.SortIssues(issues.Where(LegacyRedmineRules.IsLoginTimeIssue)).ToList();
+        var entries = await _repository.GetTimeEntriesAsync(new RedmineTimeEntryQuery
+        {
+            From = LegacyRedmineRules.FormatDate(monthStart),
+            To = LegacyRedmineRules.FormatDate(monthEnd)
+        }, cancellationToken);
+
+        var issueIds = filteredIssues.Select(issue => issue.Id).ToHashSet();
+        var hoursByIssueId = new Dictionary<int, decimal>();
+
+        foreach (var entry in LegacyRedmineRules.SortTimeEntries(entries))
+        {
+            var issueId = entry.Issue?.Id;
+            if (!issueId.HasValue || !issueIds.Contains(issueId.Value))
+            {
+                continue;
+            }
+
+            hoursByIssueId[issueId.Value] = hoursByIssueId.GetValueOrDefault(issueId.Value) + entry.Hours;
         }
 
         return new LogTimeSummary(
             userName,
             userName,
             reportDate,
-            entries.Select(entry => new LogTimeItem(
-                entry.Issue?.Id is { } issueId ? $"RM-{issueId}" : $"TE-{entry.Id}",
-                entry.Issue?.Subject ?? entry.Comments ?? "Time entry",
-                "Logged",
-                entry.Hours)).ToList());
+            filteredIssues.Select(issue => new LogTimeItem(
+                $"RM-{issue.Id}",
+                issue.Subject,
+                issue.Status?.Name ?? string.Empty,
+                hoursByIssueId.GetValueOrDefault(issue.Id))).ToList());
     }
 }

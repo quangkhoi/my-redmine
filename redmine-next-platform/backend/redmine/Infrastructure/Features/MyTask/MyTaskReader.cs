@@ -15,24 +15,29 @@ public sealed class MyTaskReader : IMyTaskReader
         _userDirectory = userDirectory;
     }
 
-    public async Task<MyTaskSummary?> GetForUserAsync(string userName, CancellationToken cancellationToken)
+    public async Task<MyTaskSummary?> GetForUserAsync(string userName, string? startDate, string? endDate, CancellationToken cancellationToken)
     {
         if (!_userDirectory.TryResolveUserId(userName, out var userId))
         {
             return null;
         }
 
-        var issues = await _repository.GetIssuesAsync(new RedmineIssueQuery(), cancellationToken);
-        var filtered = issues
-            .Where(issue =>
-                issue.AssignedTo?.Id == userId &&
-                issue.DoneRatio < 100)
-            .ToList();
-
-        if (filtered.Count == 0)
+        var issues = await _repository.GetIssuesAsync(new RedmineIssueQuery
         {
-            return null;
-        }
+            StatusId = "*",
+            AssignedToId = userId,
+            StartDate = !string.IsNullOrWhiteSpace(startDate) && !string.IsNullOrWhiteSpace(endDate)
+                ? $"><{startDate}|{endDate}"
+                : null,
+            Sort = "start_date:asc,due_date:asc,id:asc"
+        }, cancellationToken);
+        var filtered = LegacyRedmineRules.SortIssues(issues.Where(issue =>
+                issue.AssignedTo?.Id == userId &&
+                LegacyRedmineRules.IsMyTaskIssue(issue) &&
+                (string.IsNullOrWhiteSpace(startDate) || string.IsNullOrWhiteSpace(endDate) ||
+                    (LegacyRedmineRules.DateGte(issue.StartDate, DateOnly.Parse(startDate)) &&
+                     LegacyRedmineRules.DateLte(issue.StartDate, DateOnly.Parse(endDate))))))
+            .ToList();
 
         return new MyTaskSummary(
             userName,

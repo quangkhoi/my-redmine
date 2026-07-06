@@ -9,5 +9,9 @@ public sealed class GetMyTaskQueryValidator : AbstractValidator<GetMyTaskQuery>
         RuleFor(x => x.UserName)
             .NotEmpty()
             .WithMessage("User name is required.");
+
+        RuleFor(x => x)
+            .Must(query => string.IsNullOrWhiteSpace(query.StartDate) == string.IsNullOrWhiteSpace(query.EndDate))
+            .WithMessage("StartDate and EndDate must be provided together.");
     }
 }

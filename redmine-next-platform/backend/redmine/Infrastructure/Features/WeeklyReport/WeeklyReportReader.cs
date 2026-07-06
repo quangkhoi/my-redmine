@@ -7,13 +7,11 @@ namespace Redmine.Infrastructure.Features.WeeklyReport;
 public sealed class WeeklyReportReader : IWeeklyReportReader
 {
     private readonly IRedmineIssueRepository _repository;
-    private readonly IRedmineReferenceDataRepository _referenceDataRepository;
     private readonly IRedmineUserDirectory _userDirectory;
 
-    public WeeklyReportReader(IRedmineIssueRepository repository, IRedmineReferenceDataRepository referenceDataRepository, IRedmineUserDirectory userDirectory)
+    public WeeklyReportReader(IRedmineIssueRepository repository, IRedmineUserDirectory userDirectory)
     {
         _repository = repository;
-        _referenceDataRepository = referenceDataRepository;
         _userDirectory = userDirectory;
     }
 
@@ -24,49 +22,98 @@ public sealed class WeeklyReportReader : IWeeklyReportReader
             return null;
         }
 
-        var issues = await _repository.GetIssuesAsync(new RedmineIssueQuery
-        {
-            UpdatedOn = weekStart,
-            AssignedToId = userId
-        }, cancellationToken);
-        var statuses = await _referenceDataRepository.GetIssueStatusesAsync(cancellationToken);
-        var doneStatusName = FindStatusName(statuses, "処理済み", "Done", "Closed");
-        var inProgressStatusName = FindStatusName(statuses, "処理中", "In Progress");
-
-        if (issues.Count == 0)
+        if (!LegacyRedmineRules.TryParseDate(weekStart, out var currentMonday))
         {
             return null;
         }
 
-        var weekEnd = DateOnly.Parse(weekStart).AddDays(6).ToString("yyyy-MM-dd");
+        var currentFriday = currentMonday.AddDays(4);
+        var previousMonday = currentMonday.AddDays(-7);
+        var previousFriday = currentMonday.AddDays(-3);
+
+        var prevCsharp = await FetchReportListAsync(LegacyRedmineRules.WeeklyCsharpAssigneeIds, previousMonday, previousFriday, null, cancellationToken);
+        var prevWeb = await FetchReportListAsync(LegacyRedmineRules.WeeklyWebAssigneeIds, previousMonday, previousFriday, null, cancellationToken);
+        var currentWeb = await FetchReportListAsync(LegacyRedmineRules.WeeklyWebAssigneeIds, currentMonday, currentFriday, null, cancellationToken);
+        var teamCurrentCsharp = await FetchReportListAsync(LegacyRedmineRules.WeeklyCsharpAssigneeIds, currentMonday, currentFriday, null, cancellationToken);
+        var specialCurrentCsharp = await FetchReportListAsync(
+            [LegacyRedmineRules.WeeklySpecialDevelopmentAssigneeId],
+            currentMonday,
+            currentFriday,
+            LegacyRedmineRules.IsDevelopmentIssue,
+            cancellationToken);
+
+        var currentCsharp = LegacyRedmineRules
+            .SortIssues(LegacyRedmineRules.UniqueIssues(teamCurrentCsharp.Concat(specialCurrentCsharp)))
+            .Select(ToWeeklyItem)
+            .ToList();
 
         return new WeeklyReportSummary(
-            weekStart,
-            weekEnd,
             userName,
-            issues.Select((issue, index) => new WeeklyReportItem(
-                $"RM-{issue.Id}",
-                issue.Subject,
-                ResolveWeeklyStatus(issue, doneStatusName, inProgressStatusName),
-                "Mon",
-                index + 1)).ToList());
+            true,
+            new WeeklyReportRange(LegacyRedmineRules.FormatDate(previousMonday), LegacyRedmineRules.FormatDate(currentFriday)),
+            new WeeklyReportRange(LegacyRedmineRules.FormatDate(previousMonday), LegacyRedmineRules.FormatDate(previousFriday)),
+            prevCsharp.Select(ToWeeklyItem).ToList(),
+            prevWeb.Select(ToWeeklyItem).ToList(),
+            currentCsharp,
+            currentWeb.Select(ToWeeklyItem).ToList());
     }
 
-    private static string ResolveWeeklyStatus(RedmineIssueDto issue, string? doneStatusName, string? inProgressStatusName)
+    private async Task<IReadOnlyList<RedmineIssueDto>> FetchReportListAsync(
+        IReadOnlyList<int> assigneeIds,
+        DateOnly rangeStart,
+        DateOnly rangeEnd,
+        Func<RedmineIssueDto, bool>? issueFilter,
+        CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrWhiteSpace(doneStatusName) && string.Equals(issue.Status?.Name, doneStatusName, StringComparison.OrdinalIgnoreCase))
+        var issueSets = await Task.WhenAll(assigneeIds.Select(assigneeId => _repository.GetIssuesAsync(new RedmineIssueQuery
         {
-            return "Done";
+            StatusId = "*",
+            AssignedToId = assigneeId,
+            StartDate = $"<={LegacyRedmineRules.FormatDate(rangeEnd)}",
+            DueDate = $">={LegacyRedmineRules.FormatDate(rangeStart)}",
+            Sort = "start_date:asc,due_date:asc,id:asc"
+        }, cancellationToken)));
+
+        var issues = LegacyRedmineRules
+            .SortIssues(LegacyRedmineRules.UniqueIssues(issueSets.SelectMany(set => set)))
+            .Where(LegacyRedmineRules.IsWorkItemStatusIssue)
+            .Where(issueFilter ?? (_ => true))
+            .ToList();
+
+        var issueIds = issues.Select(issue => issue.Id).ToHashSet();
+        var spentHoursByIssueId = new Dictionary<int, decimal>();
+        var entries = await _repository.GetTimeEntriesAsync(new RedmineTimeEntryQuery
+        {
+            From = LegacyRedmineRules.FormatDate(rangeStart),
+            To = LegacyRedmineRules.FormatDate(rangeEnd)
+        }, cancellationToken);
+
+        foreach (var entry in LegacyRedmineRules.SortTimeEntries(entries))
+        {
+            var issueId = entry.Issue?.Id;
+            if (!issueId.HasValue || !issueIds.Contains(issueId.Value))
+            {
+                continue;
+            }
+
+            spentHoursByIssueId[issueId.Value] = spentHoursByIssueId.GetValueOrDefault(issueId.Value) + entry.Hours;
         }
 
-        if (!string.IsNullOrWhiteSpace(inProgressStatusName) && string.Equals(issue.Status?.Name, inProgressStatusName, StringComparison.OrdinalIgnoreCase))
+        return issues.Select(issue => issue with
         {
-            return "In Progress";
-        }
-
-        return issue.Status?.Name ?? "Open";
+            SpentHours = spentHoursByIssueId.GetValueOrDefault(issue.Id)
+        }).ToList();
     }
 
-    private static string? FindStatusName(IReadOnlyList<RedmineIssueStatusDto> statuses, params string[] candidates)
-        => statuses.FirstOrDefault(status => candidates.Any(candidate => string.Equals(status.Name, candidate, StringComparison.OrdinalIgnoreCase)))?.Name;
+    private static WeeklyReportItem ToWeeklyItem(RedmineIssueDto issue)
+        => new(
+            issue.Id,
+            $"RM-{issue.Id}",
+            issue.Project?.Name ?? string.Empty,
+            issue.Subject,
+            issue.Status?.Name ?? string.Empty,
+            LegacyRedmineRules.GetTrackerName(issue),
+            issue.StartDate,
+            issue.DueDate,
+            issue.SpentHours ?? 0m);
 }

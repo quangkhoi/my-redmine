@@ -56,7 +56,7 @@ public sealed class EndpointSmokeTests : IClassFixture<RedmineApiFactory>
 
         var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Equal("tuyennguyen", payload.RootElement.GetProperty("userName").GetString());
-        Assert.True(payload.RootElement.GetProperty("items").GetArrayLength() > 0);
+        Assert.True(payload.RootElement.GetProperty("groups").GetArrayLength() > 0);
     }
 
     [Fact]
@@ -65,6 +65,9 @@ public sealed class EndpointSmokeTests : IClassFixture<RedmineApiFactory>
         var response = await _client.GetAsync("/api/weekly-report/2026-07-01/tuyennguyen");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(payload.RootElement.GetProperty("hasPrevious").GetBoolean());
     }
 
     [Fact]

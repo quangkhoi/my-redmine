@@ -7,5 +7,6 @@ namespace Redmine.Api.Contracts.WeeklyReport;
 public static partial class WeeklyReportContractMapper
 {
     public static partial GetWeeklyReportResponseContract ToContract(GetWeeklyReportResponse response);
+    public static partial GetWeeklyReportRangeResponseContract ToContract(GetWeeklyReportRangeResponse response);
     public static partial GetWeeklyReportItemResponseContract ToContract(GetWeeklyReportItemResponse response);
 }

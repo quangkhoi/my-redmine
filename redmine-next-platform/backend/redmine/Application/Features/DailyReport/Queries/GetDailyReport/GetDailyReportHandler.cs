@@ -32,6 +32,21 @@ public sealed class GetDailyReportHandler
         return new GetDailyReportResponse(
             summary.ReportDate,
             summary.UserName,
-            summary.Items.Select(item => new GetDailyReportItemResponse(item.IssueKey, item.Subject, item.Status, item.HoursSpent)).ToList());
+            summary.Groups.Select(ToGroupResponse).ToList(),
+            ToGroupResponse(summary.Other));
     }
+
+    private static GetDailyReportGroupResponse ToGroupResponse(Domain.DailyReport.DailyReportGroup group)
+        => new(
+            group.Key,
+            group.Label,
+            group.AssigneeId,
+            group.Items.Select(item => new GetDailyReportItemResponse(
+                item.IssueId,
+                item.IssueKey,
+                item.Subject,
+                item.Status,
+                item.TrackerName,
+                item.StartDate,
+                item.DueDate)).ToList());
 }

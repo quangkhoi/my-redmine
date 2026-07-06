@@ -27,8 +27,8 @@ public sealed class RedmineClientFacade : IRedmineClientFacade
     public Task<RedmineIssuesResponse> GetIssuesAsync(RedmineIssueQuery query, CancellationToken cancellationToken)
         => SendAsync<RedmineIssuesResponse>(BuildIssuesUri(query), cancellationToken);
 
-    public Task<RedmineTimeEntriesResponse> GetTimeEntriesAsync(string? spentOn, int? userId, CancellationToken cancellationToken)
-        => SendAsync<RedmineTimeEntriesResponse>(BuildTimeEntriesUri(spentOn, userId), cancellationToken);
+    public Task<RedmineTimeEntriesResponse> GetTimeEntriesAsync(RedmineTimeEntryQuery query, CancellationToken cancellationToken)
+        => SendAsync<RedmineTimeEntriesResponse>(BuildTimeEntriesUri(query), cancellationToken);
 
     public async Task<RedmineIssueStatusesResponse> GetIssueStatusesAsync(CancellationToken cancellationToken)
         => new(await GetIssueStatusesCachedAsync(cancellationToken));
@@ -125,24 +125,32 @@ public sealed class RedmineClientFacade : IRedmineClientFacade
         var builder = new UriBuilder(new Uri(baseUri, "issues.json"));
         var parts = new List<string>();
 
-        if (query.StatusId.HasValue) parts.Add($"status_id={query.StatusId.Value}");
+        if (!string.IsNullOrWhiteSpace(query.StatusId)) parts.Add($"status_id={Uri.EscapeDataString(query.StatusId)}");
         if (query.AssignedToId.HasValue) parts.Add($"assigned_to_id={query.AssignedToId.Value}");
+        if (!string.IsNullOrWhiteSpace(query.StartDate)) parts.Add($"start_date={Uri.EscapeDataString(query.StartDate)}");
         if (!string.IsNullOrWhiteSpace(query.DueDate)) parts.Add($"due_date={Uri.EscapeDataString(query.DueDate)}");
         if (!string.IsNullOrWhiteSpace(query.UpdatedOn)) parts.Add($"updated_on={Uri.EscapeDataString(query.UpdatedOn)}");
         if (!string.IsNullOrWhiteSpace(query.SpentOn)) parts.Add($"spent_on={Uri.EscapeDataString(query.SpentOn)}");
+        if (!string.IsNullOrWhiteSpace(query.Sort)) parts.Add($"sort={Uri.EscapeDataString(query.Sort)}");
+        if (query.Limit.HasValue) parts.Add($"limit={query.Limit.Value}");
+        if (query.Offset.HasValue) parts.Add($"offset={query.Offset.Value}");
 
         builder.Query = string.Join('&', parts);
         return builder.Uri;
     }
 
-    private Uri BuildTimeEntriesUri(string? spentOn, int? userId)
+    private Uri BuildTimeEntriesUri(RedmineTimeEntryQuery query)
     {
         var baseUri = new Uri(_options.BaseUrl, UriKind.Absolute);
         var builder = new UriBuilder(new Uri(baseUri, "time_entries.json"));
         var parts = new List<string>();
 
-        if (!string.IsNullOrWhiteSpace(spentOn)) parts.Add($"spent_on={Uri.EscapeDataString(spentOn)}");
-        if (userId.HasValue) parts.Add($"user_id={userId.Value}");
+        if (!string.IsNullOrWhiteSpace(query.From)) parts.Add($"from={Uri.EscapeDataString(query.From)}");
+        if (!string.IsNullOrWhiteSpace(query.To)) parts.Add($"to={Uri.EscapeDataString(query.To)}");
+        if (query.UserId.HasValue) parts.Add($"user_id={query.UserId.Value}");
+        if (query.IssueId.HasValue) parts.Add($"issue_id={query.IssueId.Value}");
+        if (query.Limit.HasValue) parts.Add($"limit={query.Limit.Value}");
+        if (query.Offset.HasValue) parts.Add($"offset={query.Offset.Value}");
 
         builder.Query = string.Join('&', parts);
         return builder.Uri;

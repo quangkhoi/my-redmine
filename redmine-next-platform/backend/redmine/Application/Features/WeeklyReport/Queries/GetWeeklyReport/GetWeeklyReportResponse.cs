@@ -1,5 +1,24 @@
 namespace Redmine.Application.Features.WeeklyReport.Queries.GetWeeklyReport;
 
-public sealed record GetWeeklyReportResponse(string WeekStart, string WeekEnd, string UserName, IReadOnlyList<GetWeeklyReportItemResponse> Items);
+public sealed record GetWeeklyReportResponse(
+    string UserName,
+    bool HasPrevious,
+    GetWeeklyReportRangeResponse Range,
+    GetWeeklyReportRangeResponse ExportRange,
+    IReadOnlyList<GetWeeklyReportItemResponse> PrevCsharp,
+    IReadOnlyList<GetWeeklyReportItemResponse> PrevWeb,
+    IReadOnlyList<GetWeeklyReportItemResponse> CurrentCsharp,
+    IReadOnlyList<GetWeeklyReportItemResponse> CurrentWeb);
 
-public sealed record GetWeeklyReportItemResponse(string IssueKey, string Subject, string Status, string Day, int HoursSpent);
+public sealed record GetWeeklyReportRangeResponse(string From, string To);
+
+public sealed record GetWeeklyReportItemResponse(
+    int IssueId,
+    string IssueKey,
+    string ProjectName,
+    string Subject,
+    string Status,
+    string TrackerName,
+    string? StartDate,
+    string? DueDate,
+    decimal ReportSpentHours);

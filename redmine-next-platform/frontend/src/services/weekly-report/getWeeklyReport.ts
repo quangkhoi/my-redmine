@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "@/constants/api";
 import { normalizeApiError } from "@/lib/http/normalizeApiError";
-import type { WeeklyReportApiResponse, WeeklyReportViewModel } from "@/types/api/weekly-report";
+import { toWeeklyReportViewModel, type WeeklyReportApiResponse, type WeeklyReportViewModel } from "@/types/api/weekly-report";
 
 type ApiResult = { kind: "ok"; data: WeeklyReportViewModel } | { kind: "error"; message: string };
 
@@ -12,7 +12,7 @@ export async function getWeeklyReport(weekStart: string, userName: string): Prom
     }
 
     const payload = (await response.json()) as WeeklyReportApiResponse;
-    return { kind: "ok", data: payload };
+    return { kind: "ok", data: toWeeklyReportViewModel(payload) };
   } catch {
     return { kind: "error", message: "Network error." };
   }

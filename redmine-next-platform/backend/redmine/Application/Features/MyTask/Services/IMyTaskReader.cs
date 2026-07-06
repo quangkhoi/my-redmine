@@ -4,5 +4,5 @@ namespace Redmine.Application.Features.MyTask.Services;
 
 public interface IMyTaskReader
 {
-    Task<MyTaskSummary?> GetForUserAsync(string userName, CancellationToken cancellationToken);
+    Task<MyTaskSummary?> GetForUserAsync(string userName, string? startDate, string? endDate, CancellationToken cancellationToken);
 }

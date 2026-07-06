@@ -21,7 +21,7 @@ public sealed class GetMyTaskUseCaseTests
 
     private sealed class FakeMyTaskReader : IMyTaskReader
     {
-        public Task<MyTaskSummary?> GetForUserAsync(string userName, CancellationToken cancellationToken)
+        public Task<MyTaskSummary?> GetForUserAsync(string userName, string? startDate, string? endDate, CancellationToken cancellationToken)
         {
             MyTaskSummary? summary = userName == "tuyennguyen"
                 ? new MyTaskSummary(

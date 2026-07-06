@@ -12,8 +12,8 @@ public sealed class RedmineApiClient
     public Task<RedmineIssuesResponse> GetIssuesAsync(RedmineIssueQuery query, CancellationToken cancellationToken)
         => _facade.GetIssuesAsync(query, cancellationToken);
 
-    public Task<RedmineTimeEntriesResponse> GetTimeEntriesAsync(string? spentOn, int? userId, CancellationToken cancellationToken)
-        => _facade.GetTimeEntriesAsync(spentOn, userId, cancellationToken);
+    public Task<RedmineTimeEntriesResponse> GetTimeEntriesAsync(RedmineTimeEntryQuery query, CancellationToken cancellationToken)
+        => _facade.GetTimeEntriesAsync(query, cancellationToken);
 
     public Task<RedmineIssueStatusesResponse> GetIssueStatusesAsync(CancellationToken cancellationToken)
         => _facade.GetIssueStatusesAsync(cancellationToken);

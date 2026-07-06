@@ -7,5 +7,6 @@ namespace Redmine.Api.Contracts.DailyReport;
 public static partial class DailyReportContractMapper
 {
     public static partial GetDailyReportResponseContract ToContract(GetDailyReportResponse response);
+    public static partial GetDailyReportGroupResponseContract ToContract(GetDailyReportGroupResponse response);
     public static partial GetDailyReportItemResponseContract ToContract(GetDailyReportItemResponse response);
 }
