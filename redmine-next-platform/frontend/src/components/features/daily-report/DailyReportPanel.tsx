@@ -30,14 +30,17 @@ function buildReportHtml(
   lines.push("");
 
   for (const group of groups) {
-    if (group.items.length === 0) continue;
     lines.push(`■${group.label}`);
-    group.items.forEach((item, i) => {
-      const number = getCircledNumber(i);
-      const url = getIssueUrl(item.issueId);
-      const displayText = `${item.subject || "-"} - ${item.projectName || "-"}`;
-      lines.push(`${number}<a href="${url}" target="_blank" rel="noreferrer">${displayText}</a>`);
-    });
+    if (group.items.length === 0) {
+      lines.push("No issues.");
+    } else {
+      group.items.forEach((item, i) => {
+        const number = getCircledNumber(i);
+        const url = getIssueUrl(item.issueId);
+        const displayText = `${item.subject || "-"} - ${item.projectName || "-"}`;
+        lines.push(`${number}<a href="${url}" target="_blank" rel="noreferrer">${displayText}</a>`);
+      });
+    }
     lines.push("");
   }
 
@@ -69,14 +72,17 @@ function buildClipboardPlainText(
   lines.push("");
 
   for (const group of groups) {
-    if (group.items.length === 0) continue;
     lines.push(`■${group.label}`);
-    group.items.forEach((item, i) => {
-      const number = getCircledNumber(i);
-      const url = getIssueUrl(item.issueId);
-      const displayText = `${item.subject || "-"} - ${item.projectName || "-"}`;
-      lines.push(`${number}${displayText} ${url}`);
-    });
+    if (group.items.length === 0) {
+      lines.push("No issues.");
+    } else {
+      group.items.forEach((item, i) => {
+        const number = getCircledNumber(i);
+        const url = getIssueUrl(item.issueId);
+        const displayText = `${item.subject || "-"} - ${item.projectName || "-"}`;
+        lines.push(`${number}${displayText} ${url}`);
+      });
+    }
     lines.push("");
   }
 
@@ -213,10 +219,10 @@ export function DailyReportPanel() {
           <p>お疲れ様です。</p>
           <p>{new Date(reportDate).getMonth() + 1}月{new Date(reportDate).getDate()}日の対応予定を報告いたします。</p>
           <p>&nbsp;</p>
-          {filteredGroups.map((group) =>
-            group.items.length > 0 && (
+          {filteredGroups.map((group) => (
               <div key={group.key}>
                 <p className="mt-2 font-medium text-white">■{group.label}</p>
+                {group.items.length === 0 && <p className="text-slate-400">No issues.</p>}
                 {group.items.map((item, index) => (
                   <p key={item.issueId}>
                     {getCircledNumber(index)}
@@ -226,12 +232,12 @@ export function DailyReportPanel() {
                   </p>
                 ))}
               </div>
-            ),
-          )}
-          {otherGroup && otherGroup.items.length > 0 && (
+            ))}
+          {otherGroup && (
             <div>
               <p>&nbsp;</p>
               <p className="mt-2 font-medium text-white">■{otherGroup.label}</p>
+              {otherGroup.items.length === 0 && <p className="text-slate-400">No issues.</p>}
               {otherGroup.items.map((item, index) => (
                 <p key={item.issueId}>
                   {getCircledNumber(index)}
