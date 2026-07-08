@@ -2,3 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Report section/team/spacer rows */
+.report-section-row td {
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 0;
+  font-size: 16px;
+  font-weight: 800;
+  padding: 18px 14px 10px;
+}
+
+.report-team-row td {
+  background: rgba(15, 118, 110, 0.1);
+  color: #5eead4;
+  font-weight: 800;
+}
+
+.report-spacer-row td {
+  height: 28px;
+  border-bottom: 0;
+  padding: 0;
+}
+
+.report-selection-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 48px;
+}
+
+.report-selection-control input {
+  width: 15px;
+  height: 15px;
+  accent-color: #0f766e;
+}
+
+.report-row-excluded td {
+  background: rgba(255, 255, 255, 0.02);
+  color: #64748b;
+  text-decoration: line-through;
+}
+
+.report-row-excluded .issue-link {
+  color: #64748b;
+}
+
+.report-row-excluded:hover td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
