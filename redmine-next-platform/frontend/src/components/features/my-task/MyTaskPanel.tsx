@@ -113,7 +113,7 @@ export function MyTaskPanel({ eyebrow, title, description }: { eyebrow: string; 
                   <div>
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-12 overflow-hidden rounded-full bg-secondary">
-                        <div className="h-full rounded-full bg-sky-500" style={{ width: `${Math.max(0, Math.min(100, item.doneRatio))}%` }} />
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(0, Math.min(100, item.doneRatio))}%` }} />
                       </div>
                       <span className="tabular-nums text-xs">{item.doneRatio}%</span>
                     </div>
