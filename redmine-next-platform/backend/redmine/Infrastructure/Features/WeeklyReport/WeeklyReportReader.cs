@@ -31,16 +31,24 @@ public sealed class WeeklyReportReader : IWeeklyReportReader
         var previousMonday = currentMonday.AddDays(-7);
         var previousFriday = currentMonday.AddDays(-3);
 
-        var prevCsharp = await FetchReportListAsync(LegacyRedmineRules.WeeklyCsharpAssigneeIds, previousMonday, previousFriday, null, cancellationToken);
-        var prevWeb = await FetchReportListAsync(LegacyRedmineRules.WeeklyWebAssigneeIds, previousMonday, previousFriday, null, cancellationToken);
-        var currentWeb = await FetchReportListAsync(LegacyRedmineRules.WeeklyWebAssigneeIds, currentMonday, currentFriday, null, cancellationToken);
-        var teamCurrentCsharp = await FetchReportListAsync(LegacyRedmineRules.WeeklyCsharpAssigneeIds, currentMonday, currentFriday, null, cancellationToken);
-        var specialCurrentCsharp = await FetchReportListAsync(
+        var prevCsharpTask = FetchReportListAsync(LegacyRedmineRules.WeeklyCsharpAssigneeIds, previousMonday, previousFriday, null, cancellationToken);
+        var prevWebTask = FetchReportListAsync(LegacyRedmineRules.WeeklyWebAssigneeIds, previousMonday, previousFriday, null, cancellationToken);
+        var currentWebTask = FetchReportListAsync(LegacyRedmineRules.WeeklyWebAssigneeIds, currentMonday, currentFriday, null, cancellationToken);
+        var teamCurrentCsharpTask = FetchReportListAsync(LegacyRedmineRules.WeeklyCsharpAssigneeIds, currentMonday, currentFriday, null, cancellationToken);
+        var specialCurrentCsharpTask = FetchReportListAsync(
             [LegacyRedmineRules.WeeklySpecialDevelopmentAssigneeId],
             currentMonday,
             currentFriday,
             LegacyRedmineRules.IsDevelopmentIssue,
             cancellationToken);
+
+        await Task.WhenAll(prevCsharpTask, prevWebTask, currentWebTask, teamCurrentCsharpTask, specialCurrentCsharpTask);
+
+        var prevCsharp = await prevCsharpTask;
+        var prevWeb = await prevWebTask;
+        var currentWeb = await currentWebTask;
+        var teamCurrentCsharp = await teamCurrentCsharpTask;
+        var specialCurrentCsharp = await specialCurrentCsharpTask;
 
         var currentCsharp = LegacyRedmineRules
             .SortIssues(LegacyRedmineRules.UniqueIssues(teamCurrentCsharp.Concat(specialCurrentCsharp)))
