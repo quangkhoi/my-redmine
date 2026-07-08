@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 98%;
+    --card-foreground: 222 47% 11%;
+    --primary: 198 93% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 198 93% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 198 93% 50%;
+    --sidebar-bg: 210 40% 98%;
+    --sidebar-text: 215 25% 27%;
+    --sidebar-muted: 215 16% 47%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 240 6% 3%;
+    --foreground: 210 40% 98%;
+    --card: 240 6% 5%;
+    --card-foreground: 210 40% 98%;
+    --primary: 198 93% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 198 93% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 63% 31%;
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
+    --ring: 198 93% 50%;
+    --sidebar-bg: 240 6% 3%;
+    --sidebar-text: 215 20% 65%;
+    --sidebar-muted: 215 20% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Report section/team/spacer rows */
+.report-section-row td {
+  background: hsl(var(--secondary));
+  font-weight: 600;
+}
+.report-team-row td {
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+.report-spacer-row td {
+  height: 28px;
+}
+.report-selection-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.report-selection-control input {
+  accent-color: hsl(var(--primary));
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+.report-row-excluded td {
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+}

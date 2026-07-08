@@ -1,0 +1,6 @@
+@Redmine.Api_HostAddress = http://localhost:5197
+
+GET {{Redmine.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

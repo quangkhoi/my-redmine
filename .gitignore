@@ -3,3 +3,4 @@
 scripts/connection.local.json
 scripts/node_modules/
 scripts/package-lock.json
+tsconfig.tsbuildinfo

@@ -1,0 +1,45 @@
+name: wdm-redmine-platform
+
+services:
+  backend:
+    container_name: backend
+    build:
+      context: .
+      dockerfile: backend/docker/Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - appnet
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8080
+    depends_on:
+      - backend
+    ports:
+      - "3001:3001"
+    networks:
+      - appnet
+
+  caddy:
+    container_name: caddy
+    image: caddy:2-alpine
+    profiles: ["proxy"]
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
+  

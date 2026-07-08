@@ -1,0 +1,7 @@
+**/bin
+**/obj
+**/*.log
+tests/**/bin
+tests/**/obj
+README.md
+**/README.md

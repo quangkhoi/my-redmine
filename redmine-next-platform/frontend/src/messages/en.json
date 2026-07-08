@@ -1,0 +1,85 @@
+{
+  "home": {
+    "title": "Task lane for today",
+    "eyebrow": "My Task",
+    "description": "Backend responses are normalized in one shared HTTP layer before the page sees them.",
+    "loading": "Loading task list...",
+    "empty": "No tasks found.",
+    "assignedTo": "Assigned to"
+  },
+  "dailyReport": {
+    "eyebrow": "Daily Report",
+    "title": "Daily Report",
+    "description": "Daily work report for team sync",
+    "loading": "Loading daily report...",
+    "empty": "No report entries found.",
+    "reportDate": "Report date",
+    "userName": "User",
+    "columns": {
+      "issue": "Issue",
+      "subject": "Subject",
+      "status": "Status",
+      "hours": "Hours"
+    }
+  },
+  "myTask": {
+    "eyebrow": "My Task",
+    "title": "Task lane for today",
+    "description": "Your active issues are loaded from the backend through a single normalized response layer.",
+    "loading": "Loading task list...",
+    "empty": "No tasks found.",
+    "assignedTo": "Assigned to",
+    "columns": {
+      "issue": "Issue",
+      "subject": "Subject",
+      "status": "Status"
+    }
+  },
+  "dashboard": {
+    "eyebrow": "Dashboard",
+    "title": "Team overview",
+    "description": "A compact summary that combines the user's current work posture into one surface.",
+    "loading": "Loading dashboard...",
+    "empty": "No dashboard data found.",
+    "reportDate": "Snapshot date",
+    "userName": "User"
+  },
+  "weeklyReport": {
+    "eyebrow": "Weekly Report",
+    "title": "Weekly Report",
+    "description": "Weekly report for C# and WEB teams",
+    "loading": "Loading weekly report...",
+    "empty": "No weekly report entries found.",
+    "weekStart": "Week start",
+    "weekEnd": "Week end",
+    "userName": "User",
+    "columns": {
+      "project": "Project",
+      "issue": "Issue",
+      "ticketId": "Ticket ID",
+      "title": "Title",
+      "subject": "Subject",
+      "status": "Status",
+      "day": "Day",
+      "hours": "Hours"
+    }
+  },
+  "logTime": {
+    "eyebrow": "Log Time",
+    "title": "Worklog snapshot",
+    "description": "A compact list of issues with the time already logged against each item.",
+    "loading": "Loading log time...",
+    "empty": "No log time entries found.",
+    "reportDate": "Report date",
+    "userName": "User",
+    "columns": {
+      "issue": "Issue",
+      "subject": "Subject",
+      "status": "Status",
+      "hours": "Hours"
+    }
+  },
+  "errors": {
+    "unexpected": "Unexpected error."
+  }
+}
