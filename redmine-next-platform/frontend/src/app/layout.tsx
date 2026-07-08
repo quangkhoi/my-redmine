@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import messages from "@/messages/en.json";
 
 export const metadata: Metadata = {
+  title: "WDM Redmine Dashboard",
   icons: { icon: "/favicon.svg" },
 };
 

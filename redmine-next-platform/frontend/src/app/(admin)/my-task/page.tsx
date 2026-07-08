@@ -1,10 +1,10 @@
-"use client";
+import type { Metadata } from "next";
+import { MyTaskPageClient } from "./MyTaskPageClient";
 
-import { MyTaskPanel } from "@/components/features/my-task/MyTaskPanel";
-import { useTranslations } from "next-intl";
+export const metadata: Metadata = {
+  title: "My Task - WDM Redmine Dashboard",
+};
 
 export default function Page() {
-  const t = useTranslations("myTask");
-
-  return <MyTaskPanel eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />;
+  return <MyTaskPageClient />;
 }
