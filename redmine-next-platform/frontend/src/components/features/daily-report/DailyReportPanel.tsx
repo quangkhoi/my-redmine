@@ -191,38 +191,38 @@ export function DailyReportPanel() {
   }, [data, filteredGroups, otherGroup, reportDate]);
 
   return (
-    <section className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur">
-      <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">{t("eyebrow")}</p>
+    <section className="w-full rounded-3xl border border-border bg-secondary/50 p-8 shadow-2xl shadow-black/30 backdrop-blur">
+      <p className="text-sm uppercase tracking-[0.3em] text-cyan-600 dark:text-cyan-300">{t("eyebrow")}</p>
       <h2 className="mt-4 text-3xl font-semibold">{t("title")}</h2>
-      <p className="mt-2 max-w-2xl text-sm text-slate-300">{t("description")}</p>
+      <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("description")}</p>
 
       {/* Controls */}
-      <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card/50 p-4">
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Report Date</label>
+          <label className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Report Date</label>
           <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)}
-            className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-sky-400/60" />
+            className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-foreground outline-none focus:border-sky-400/60" />
         </div>
         <button onClick={handleCopy} disabled={state.kind !== "ready"}
-          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:border-white/20 hover:bg-white/10 disabled:opacity-50">
+          className="rounded-xl border border-border bg-secondary px-4 py-2 text-sm text-card-foreground transition hover:border-border hover:bg-secondary/80 disabled:opacity-50">
           {copied ? "✓ Copied!" : "Copy Report"}
         </button>
       </div>
 
       {/* States */}
-      {state.kind === "loading" && <p className="mt-4 text-slate-300">{t("loading")}</p>}
+      {state.kind === "loading" && <p className="mt-4 text-muted-foreground">{t("loading")}</p>}
       {state.kind === "error" && <p className="mt-4 text-rose-300">{state.message}</p>}
-      {state.kind === "empty" && <p className="mt-4 text-slate-300">{t("empty")}</p>}
+      {state.kind === "empty" && <p className="mt-4 text-muted-foreground">{t("empty")}</p>}
 
       {state.kind === "ready" && data && (
-        <div ref={contentRef} className="mt-6 whitespace-pre-wrap rounded-2xl border border-white/10 bg-black/30 p-6 font-sans text-sm leading-relaxed text-slate-200">
+        <div ref={contentRef} className="mt-6 whitespace-pre-wrap rounded-2xl border border-border bg-secondary p-6 font-sans text-sm leading-relaxed text-card-foreground">
           <p>お疲れ様です。</p>
           <p>{new Date(reportDate).getMonth() + 1}月{new Date(reportDate).getDate()}日の対応予定を報告いたします。</p>
           <p>&nbsp;</p>
           {filteredGroups.map((group) => (
               <div key={group.key}>
-                <p className="mt-2 font-medium text-white">■{group.label}</p>
-                {group.items.length === 0 && <p className="text-slate-400">No issues.</p>}
+                <p className="mt-2 font-medium text-foreground">■{group.label}</p>
+                {group.items.length === 0 && <p className="text-muted-foreground">No issues.</p>}
                 {group.items.map((item, index) => (
                   <p key={item.issueId}>
                     {getCircledNumber(index)}
@@ -236,8 +236,8 @@ export function DailyReportPanel() {
           {otherGroup && (
             <div>
               <p>&nbsp;</p>
-              <p className="mt-2 font-medium text-white">■{otherGroup.label}</p>
-              {otherGroup.items.length === 0 && <p className="text-slate-400">No issues.</p>}
+              <p className="mt-2 font-medium text-foreground">■{otherGroup.label}</p>
+              {otherGroup.items.length === 0 && <p className="text-muted-foreground">No issues.</p>}
               {otherGroup.items.map((item, index) => (
                 <p key={item.issueId}>
                   {getCircledNumber(index)}
