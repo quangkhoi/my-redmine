@@ -39,16 +39,18 @@ public sealed class DashboardIssueReader : IDashboardIssueReader
         var releaseTargetField = customFields.FirstOrDefault(f => f.Name is "リリース対象" or "Release Target");
         var releaseTargetValueNames = BuildReleaseTargetValueNames(releaseTargetField);
 
-        var processingIssues = await FetchIssuesForAssignees(
-            processingStatusId.Value, null, null, null, cancellationToken);
+        // Parallel: fetch all 4 status groups simultaneously
+        var processingTask = FetchIssuesForAssignees(processingStatusId.Value, null, null, null, cancellationToken);
+        var notStartedTask = FetchIssuesForAssignees(notStartedStatusId.Value, null, startDate, endDate, cancellationToken);
+        var processedRawTask = FetchIssuesForAssignees(processedStatusId.Value, null, null, null, cancellationToken);
+        var completedProcessingTask = FetchIssuesForAssignees(processingStatusId.Value, null, null, null, cancellationToken);
 
-        var notStartedIssues = await FetchIssuesForAssignees(
-            notStartedStatusId.Value, null, startDate, endDate, cancellationToken);
+        await Task.WhenAll(processingTask, notStartedTask, processedRawTask, completedProcessingTask);
 
-        var processedIssuesRaw = await FetchIssuesForAssignees(
-            processedStatusId.Value, null, null, null, cancellationToken);
-        var completedProcessingIssues = await FetchIssuesForAssignees(
-            processingStatusId.Value, null, null, null, cancellationToken);
+        var processingIssues = await processingTask;
+        var notStartedIssues = await notStartedTask;
+        var processedIssuesRaw = await processedRawTask;
+        var completedProcessingIssues = await completedProcessingTask;
 
         var processing = processingIssues
             .Where(i => i.DoneRatio < 100)
@@ -83,9 +85,7 @@ public sealed class DashboardIssueReader : IDashboardIssueReader
         string? startDateTo,
         CancellationToken cancellationToken)
     {
-        var allIssues = new List<RedmineIssueDto>();
-
-        foreach (var userId in DashboardAssigneeIds)
+        var tasks = DashboardAssigneeIds.Select(async userId =>
         {
             string? startFilter = null;
             if (startDateFrom is not null && startDateTo is not null)
@@ -110,10 +110,11 @@ public sealed class DashboardIssueReader : IDashboardIssueReader
             };
 
             var issues = await _repository.GetIssuesAsync(query, cancellationToken);
-            allIssues.AddRange(issues.Where(i => i.AssignedTo?.Id == userId));
-        }
+            return issues.Where(i => i.AssignedTo?.Id == userId).ToList();
+        });
 
-        return allIssues.DistinctBy(i => i.Id).ToList();
+        var results = await Task.WhenAll(tasks);
+        return results.SelectMany(r => r).DistinctBy(i => i.Id).ToList();
     }
 
     private static DashboardIssue MapIssue(RedmineIssueDto issue, IReadOnlyDictionary<string, string> releaseTargetValueNames)
