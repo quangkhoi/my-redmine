@@ -32,7 +32,7 @@ export function SearchHighlight({ text, term }: { text: string; term: string }) 
     <>
       {parts.map((p, i) =>
         p.highlight ? (
-          <mark key={i} className="rounded bg-amber-400/30 text-amber-200 px-0.5">
+          <mark key={i} className="rounded bg-amber-100 text-amber-900 dark:bg-amber-400/30 dark:text-amber-200 px-0.5">
             {p.text}
           </mark>
         ) : (
