@@ -2,9 +2,12 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useWeeklyReport } from "@/hooks/queries/useWeeklyReport";
+import { useSearch } from "@/contexts/SearchContext";
 import { useTranslations } from "next-intl";
 import { getIssueUrl } from "@/lib/issue-url";
 import { getMondayOfWeek, formatDate } from "@/lib/date-utils";
+import { filterBySearch, buildSearchText } from "@/lib/search";
+import { SearchHighlight } from "@/components/ui/SearchHighlight";
 
 function formatDisplayDate(dateStr: string | null): string {
   if (!dateStr) return "-";
@@ -21,6 +24,18 @@ export function WeeklyReportPanel() {
   const [weekStart, setWeekStart] = useState(() => formatDate(getMondayOfWeek(new Date())));
 
   const { data, state } = useWeeklyReport(weekStart, "tuyennguyen");
+  const { searchTerm } = useSearch();
+
+  const filteredSections = useMemo(() => {
+    if (!data) return [];
+    if (!searchTerm) return data.sections;
+    return data.sections.map(section => ({
+      ...section,
+      items: filterBySearch(section.items, searchTerm, (i) =>
+        buildSearchText(i.issueId, i.issueKey, i.subject, i.projectName, i.status, i.trackerName)
+      ),
+    }));
+  }, [data, searchTerm]);
 
   const handleExport = useCallback(async () => {
     if (!data) return;
@@ -152,7 +167,7 @@ export function WeeklyReportPanel() {
           </div>
 
           <div className="space-y-6">
-            {data.sections.map((section) => (
+            {filteredSections.map((section) => (
               <div key={section.key} className="overflow-hidden rounded-2xl border border-white/10">
                 <div className="border-b border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-slate-200">
                   {section.title}
@@ -180,11 +195,11 @@ export function WeeklyReportPanel() {
                           {item.issueKey}
                         </a>
                       </div>
-                      <div className="text-slate-300">{item.projectName || "-"}</div>
-                      <div className="text-white">{item.subject}</div>
+                      <div className="text-slate-300"><SearchHighlight text={item.projectName || "-"} term={searchTerm} /></div>
+                      <div className="text-white"><SearchHighlight text={item.subject} term={searchTerm} /></div>
                       <div>
                         <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-                          {item.status}
+                          <SearchHighlight text={item.status} term={searchTerm} />
                         </span>
                       </div>
                       <div className="text-slate-300 tabular-nums">{item.reportSpentHours}h</div>

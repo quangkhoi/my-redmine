@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { useDailyReport } from "@/hooks/queries/useDailyReport";
+import { useSearch } from "@/contexts/SearchContext";
 import { useTranslations } from "next-intl";
 import { getIssueUrl } from "@/lib/issue-url";
 import { formatDate } from "@/lib/date-utils";
 import { CIRCLED_NUMBERS } from "@/config/issue-filters";
+import { filterBySearch, buildSearchText } from "@/lib/search";
+import { SearchHighlight } from "@/components/ui/SearchHighlight";
 
 function getCircledNumber(index: number): string {
   if (index < CIRCLED_NUMBERS.length) return CIRCLED_NUMBERS[index];
@@ -38,10 +41,22 @@ export function DailyReportPanel() {
   const contentRef = useRef<HTMLDivElement>(null);
 
   const { data, state } = useDailyReport(reportDate, "tuyennguyen");
+  const { searchTerm } = useSearch();
+
+  const filteredGroups = useMemo(() => {
+    if (!data) return [];
+    if (!searchTerm) return data.groups;
+    return data.groups.map(group => ({
+      ...group,
+      items: filterBySearch(group.items, searchTerm, (i) =>
+        buildSearchText(i.issueId, i.issueKey, i.subject, i.status)
+      ),
+    }));
+  }, [data, searchTerm]);
 
   const handleCopy = useCallback(async () => {
     if (!data) return;
-    const text = buildClipboardText(data.groups);
+    const text = buildClipboardText(filteredGroups);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -59,7 +74,7 @@ export function DailyReportPanel() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  }, [data]);
+  }, [data, filteredGroups]);
 
   return (
     <section className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur">
@@ -87,7 +102,7 @@ export function DailyReportPanel() {
 
       {state.kind === "ready" && data && (
         <div ref={contentRef} className="mt-6 space-y-5">
-          {data.groups.map((group) => (
+          {filteredGroups.map((group) => (
             <div key={group.key} className="overflow-hidden rounded-2xl border border-white/10">
               <div className="border-b border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-slate-200">
                 {group.label}
@@ -110,10 +125,10 @@ export function DailyReportPanel() {
                         {item.issueKey}
                       </a>
                     </div>
-                    <div className="text-white">{item.subject}</div>
+                    <div className="text-white"><SearchHighlight text={item.subject} term={searchTerm} /></div>
                     <div>
                       <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-                        {item.status}
+                        <SearchHighlight text={item.status} term={searchTerm} />
                       </span>
                     </div>
                   </div>

@@ -2,35 +2,17 @@ export function normalizeSearchTerm(value: string): string {
   return value.toLowerCase().trim();
 }
 
-export function buildIssueSearchText(issue: {
-  id?: number;
-  issueId?: number;
-  subject: string;
-  projectName?: string | null;
-  assigneeName?: string | null;
-}): string {
-  const id = String(issue.id ?? issue.issueId ?? "");
-  const project = issue.projectName ?? "";
-  const assignee = issue.assigneeName ?? "";
-  return `${id} ${issue.subject} ${project} ${assignee}`.toLowerCase();
+export function buildSearchText(...fields: (string | number | null | undefined)[]): string {
+  return fields.map(f => String(f ?? "")).join(" ").toLowerCase();
 }
 
-export function issueMatchesSearch(issue: {
-  id?: number;
-  issueId?: number;
-  subject: string;
-  projectName?: string | null;
-  assigneeName?: string | null;
-}, term: string): boolean {
+export function matchesSearch(searchText: string, term: string): boolean {
   if (!term) return true;
-  const normalized = normalizeSearchTerm(term);
-  return buildIssueSearchText(issue).includes(normalized);
+  return searchText.includes(normalizeSearchTerm(term));
 }
 
-export function filterBySearch<T extends { id?: number; issueId?: number; subject: string; projectName?: string | null; assigneeName?: string | null }>(
-  items: T[],
-  term: string
-): T[] {
+export function filterBySearch<T>(items: T[], term: string, toSearchText: (item: T) => string): T[] {
   if (!term) return items;
-  return items.filter(item => issueMatchesSearch(item, term));
+  const normalized = normalizeSearchTerm(term);
+  return items.filter(item => toSearchText(item).includes(normalized));
 }

@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMyTask } from "@/hooks/queries/useMyTask";
+import { useSearch } from "@/contexts/SearchContext";
 import { useTranslations } from "next-intl";
 import { ASSIGNEES } from "@/config/team";
 import { getIssueUrl } from "@/lib/issue-url";
 import { getHighlightClass } from "@/lib/highlight";
 import { getMondayOfWeek, getNextFriday, formatDate, formatDisplayDate } from "@/lib/date-utils";
+import { filterBySearch, buildSearchText } from "@/lib/search";
+import { SearchHighlight } from "@/components/ui/SearchHighlight";
 
 const DEFAULT_USER = "khoiduong";
 
@@ -26,6 +29,14 @@ export function MyTaskPanel({ eyebrow, title, description }: { eyebrow: string; 
   const [endDate, setEndDate] = useState(defaultRange.end);
   
   const { data, state } = useMyTask(selectedUser, startDate, endDate);
+  const { searchTerm } = useSearch();
+
+  const filteredItems = useMemo(() => {
+    if (!data) return [];
+    return filterBySearch(data.items, searchTerm, (i) =>
+      buildSearchText(i.issueKey, i.subject, i.projectName, i.status, i.trackerName)
+    );
+  }, [data, searchTerm]);
 
   return (
     <section className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur">
@@ -77,7 +88,7 @@ export function MyTaskPanel({ eyebrow, title, description }: { eyebrow: string; 
             <span>Progress</span>
           </div>
           <div className="divide-y divide-white/10">
-            {data.items.map((item, index) => {
+            {filteredItems.map((item, index) => {
               const highlightClass = getHighlightClass(item.status, item.trackerName, item.dueDate, item.startDate);
               const issueId = parseInt(item.issueKey.replace("#", ""), 10);
               return (
@@ -88,11 +99,11 @@ export function MyTaskPanel({ eyebrow, title, description }: { eyebrow: string; 
                       {item.issueKey}
                     </a>
                   </div>
-                  <div className="text-slate-300">{item.projectName ?? "-"}</div>
-                  <div className="text-white">{item.subject}</div>
+                  <div className="text-slate-300"><SearchHighlight text={item.projectName ?? "-"} term={searchTerm} /></div>
+                  <div className="text-white"><SearchHighlight text={item.subject} term={searchTerm} /></div>
                   <div>
                     <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-                      {item.status}
+                      <SearchHighlight text={item.status} term={searchTerm} />
                     </span>
                   </div>
                   <div className="text-slate-300">{formatDisplayDate(item.startDate)}</div>

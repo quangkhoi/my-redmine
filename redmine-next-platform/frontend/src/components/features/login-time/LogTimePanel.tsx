@@ -2,10 +2,13 @@
 
 import { useState, useMemo } from "react";
 import { useLogTime } from "@/hooks/queries/useLogTime";
+import { useSearch } from "@/contexts/SearchContext";
 import { useTranslations } from "next-intl";
 import { ASSIGNEES } from "@/config/team";
 import { getIssueUrl } from "@/lib/issue-url";
 import { formatDisplayDate } from "@/lib/date-utils";
+import { filterBySearch, buildSearchText } from "@/lib/search";
+import { SearchHighlight } from "@/components/ui/SearchHighlight";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 7 }, (_, i) => CURRENT_YEAR - 3 + i);
@@ -27,14 +30,18 @@ export function LogTimePanel({ reportDate: initialReportDate, userName: initialU
   const userName = initialUserName;
 
   const { data, state } = useLogTime(reportDate, userName);
+  const { searchTerm } = useSearch();
 
   const filteredItems = useMemo(() => {
     if (!data) return [];
-    if (selectedUser === "ALL") return data.items;
-    const user = ASSIGNEES.find(a => a.login === selectedUser);
-    if (!user) return data.items;
-    return data.items.filter(item => item.assigneeName === user.name);
-  }, [data, selectedUser]);
+    const byUser = selectedUser === "ALL" ? data.items : data.items.filter(item => {
+      const user = ASSIGNEES.find(a => a.login === selectedUser);
+      return user ? item.assigneeName === user.name : true;
+    });
+    return filterBySearch(byUser, searchTerm, (i) =>
+      buildSearchText(i.issueId, i.issueKey, i.subject, i.status, i.assigneeName)
+    );
+  }, [data, selectedUser, searchTerm]);
 
   return (
     <section className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur">
@@ -115,11 +122,11 @@ export function LogTimePanel({ reportDate: initialReportDate, userName: initialU
                       </a>
                     </div>
                     <div className="text-slate-300 tabular-nums">{item.hoursLogged}h</div>
-                    <div className="text-white">{item.subject}</div>
-                    <div className="text-slate-300">{item.assigneeName ?? "-"}</div>
+                    <div className="text-white"><SearchHighlight text={item.subject} term={searchTerm} /></div>
+                    <div className="text-slate-300"><SearchHighlight text={item.assigneeName ?? "-"} term={searchTerm} /></div>
                     <div>
                       <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-                        {item.status}
+                        <SearchHighlight text={item.status} term={searchTerm} />
                       </span>
                     </div>
                     <div className="text-slate-300">{formatDisplayDate(item.startDate)}</div>

@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useDashboardIssues } from "@/hooks/queries/useDashboardIssues";
+import { useSearch } from "@/contexts/SearchContext";
 import { getIssueUrl } from "@/lib/issue-url";
 import { getHighlightClass } from "@/lib/highlight";
+import { filterBySearch, buildSearchText } from "@/lib/search";
+import { SearchHighlight } from "@/components/ui/SearchHighlight";
 import type { DashboardIssueViewModel, DashboardIssueListViewModel } from "@/types/api/dashboard-issues";
 
 function formatDate(d: Date): string {
@@ -34,7 +37,7 @@ function formatHours(hours: number | null): string {
   return `${hours}h`;
 }
 
-function IssueRow({ issue, index, listName }: { issue: DashboardIssueViewModel; index: number; listName: string }) {
+function IssueRow({ issue, index, listName, searchTerm }: { issue: DashboardIssueViewModel; index: number; listName: string; searchTerm: string }) {
   const highlightClass = getHighlightClass(issue.statusName, issue.trackerName, issue.dueDate, issue.startDate);
   return (
     <tr className={highlightClass}>
@@ -49,11 +52,11 @@ function IssueRow({ issue, index, listName }: { issue: DashboardIssueViewModel; 
           #{issue.id}
         </a>
       </td>
-      <td className="px-3 py-2 text-sm text-white">{issue.subject}</td>
-      <td className="px-3 py-2 text-sm text-slate-300">{issue.projectName ?? "-"}</td>
-      <td className="px-3 py-2 text-sm text-slate-300">{issue.trackerName ?? "-"}</td>
-      <td className="px-3 py-2 text-sm text-slate-300">{issue.assigneeName ?? "-"}</td>
-      <td className="px-3 py-2 text-sm text-slate-300">{issue.statusName ?? "-"}</td>
+      <td className="px-3 py-2 text-sm text-white"><SearchHighlight text={issue.subject} term={searchTerm} /></td>
+      <td className="px-3 py-2 text-sm text-slate-300"><SearchHighlight text={issue.projectName ?? "-"} term={searchTerm} /></td>
+      <td className="px-3 py-2 text-sm text-slate-300"><SearchHighlight text={issue.trackerName ?? "-"} term={searchTerm} /></td>
+      <td className="px-3 py-2 text-sm text-slate-300"><SearchHighlight text={issue.assigneeName ?? "-"} term={searchTerm} /></td>
+      <td className="px-3 py-2 text-sm text-slate-300"><SearchHighlight text={issue.statusName ?? "-"} term={searchTerm} /></td>
       <td className="px-3 py-2 text-sm text-slate-300">{issue.startDate ?? "-"}</td>
       <td className="px-3 py-2 text-sm">
         {issue.dueDate ? (
@@ -81,7 +84,7 @@ function IssueRow({ issue, index, listName }: { issue: DashboardIssueViewModel; 
   );
 }
 
-function IssueTable({ list, label }: { list: DashboardIssueListViewModel; label: string }) {
+function IssueTable({ list, label, searchTerm }: { list: DashboardIssueListViewModel; label: string; searchTerm: string }) {
   return (
     <article className="rounded-2xl border border-white/10 bg-white/[0.04] overflow-hidden">
       <div className="flex items-center justify-between border-b border-white/10 bg-black/30 px-4 py-3">
@@ -113,7 +116,7 @@ function IssueTable({ list, label }: { list: DashboardIssueListViewModel; label:
             </thead>
             <tbody className="divide-y divide-white/10">
               {list.issues.map((issue, index) => (
-                <IssueRow key={issue.id} issue={issue} index={index} listName={list.name} />
+                <IssueRow key={issue.id} issue={issue} index={index} listName={list.name} searchTerm={searchTerm} />
               ))}
             </tbody>
           </table>
@@ -147,14 +150,20 @@ export function DashboardIssuesPanel() {
   const [hideNotStartedNonDevelopment, setHideNotStartedNonDevelopment] = useState(false);
   const [hideProcessedResearch, setHideProcessedResearch] = useState(false);
   const { data, state, load } = useDashboardIssues();
+  const { searchTerm } = useSearch();
 
   const handleLoad = () => {
     load(startDate, endDate);
   };
 
-  const visibleProcessing = data?.processing.issues ?? [];
+  const toSearchText = (i: DashboardIssueViewModel) =>
+    buildSearchText(i.id, i.subject, i.projectName, i.assigneeName, i.statusName, i.trackerName);
+
+  const visibleProcessing = filterBySearch(data?.processing.issues ?? [], searchTerm, toSearchText);
   const visibleNotStarted = getVisibleIssues(data?.notStarted.issues ?? [], "notStarted", { hideNotStartedNonDevelopment, hideProcessedResearch });
+  const visibleNotStartedFiltered = filterBySearch(visibleNotStarted, searchTerm, toSearchText);
   const visibleProcessed = getVisibleIssues(data?.processed.issues ?? [], "processed", { hideNotStartedNonDevelopment, hideProcessedResearch });
+  const visibleProcessedFiltered = filterBySearch(visibleProcessed, searchTerm, toSearchText);
 
   return (
     <section className="space-y-4">
@@ -217,11 +226,11 @@ export function DashboardIssuesPanel() {
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
               <p className="text-sm text-slate-400">Not Started</p>
-              <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{visibleNotStarted.length}</p>
+              <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{visibleNotStartedFiltered.length}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
               <p className="text-sm text-slate-400">Processed</p>
-              <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{visibleProcessed.length}</p>
+              <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{visibleProcessedFiltered.length}</p>
             </div>
           </div>
 
@@ -246,9 +255,9 @@ export function DashboardIssuesPanel() {
             </label>
           </div>
 
-          <IssueTable list={{ name: data.processing.name, issues: visibleProcessing }} label="Processing (処理中)" />
-          <IssueTable list={{ name: data.notStarted.name, issues: visibleNotStarted }} label="Not Started (未対応)" />
-          <IssueTable list={{ name: data.processed.name, issues: visibleProcessed }} label="Processed (処理済み)" />
+          <IssueTable list={{ name: data.processing.name, issues: visibleProcessing }} label="Processing (処理中)" searchTerm={searchTerm} />
+          <IssueTable list={{ name: data.notStarted.name, issues: visibleNotStartedFiltered }} label="Not Started (未対応)" searchTerm={searchTerm} />
+          <IssueTable list={{ name: data.processed.name, issues: visibleProcessedFiltered }} label="Processed (処理済み)" searchTerm={searchTerm} />
         </div>
       )}
     </section>
