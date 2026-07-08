@@ -18,5 +18,6 @@ public sealed record GetDailyReportItemResponseContract(
     string Subject,
     string Status,
     string TrackerName,
+    string? ProjectName,
     string? StartDate,
     string? DueDate);

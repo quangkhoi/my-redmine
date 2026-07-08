@@ -56,7 +56,7 @@ public sealed class RedmineApiFactory : WebApplicationFactory<Program>
                         "Tuyen",
                         99,
                         [
-                            new DailyReportItem(1001, "#1001", "Fix login", "In Progress", "開発", reportDate, "2026-07-08")
+                            new DailyReportItem(1001, "#1001", "Fix login", "In Progress", "開発", null, reportDate, "2026-07-08")
                         ])
                 ],
                 new DailyReportGroup("other", "Other", 114, [])));

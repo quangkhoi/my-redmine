@@ -47,6 +47,7 @@ public sealed class GetDailyReportHandler
                 item.Subject,
                 item.Status,
                 item.TrackerName,
+                item.ProjectName,
                 item.StartDate,
                 item.DueDate)).ToList());
 }

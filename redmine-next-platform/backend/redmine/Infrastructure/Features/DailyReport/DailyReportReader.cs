@@ -113,6 +113,7 @@ public sealed class DailyReportReader : IDailyReportReader
             issue.Subject,
             issue.Status?.Name ?? string.Empty,
             LegacyRedmineRules.GetTrackerName(issue),
+            issue.Project?.Name,
             issue.StartDate,
             issue.DueDate);
 }
