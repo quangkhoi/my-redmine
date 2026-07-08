@@ -11,6 +11,7 @@ export type DailyReportApiResponse = {
       subject: string;
       status: string;
       trackerName: string;
+      projectName: string | null;
       startDate: string | null;
       dueDate: string | null;
     }>;
@@ -25,6 +26,7 @@ export type DailyReportApiResponse = {
       subject: string;
       status: string;
       trackerName: string;
+      projectName: string | null;
       startDate: string | null;
       dueDate: string | null;
     }>;
@@ -44,6 +46,7 @@ export type DailyReportViewModel = {
       subject: string;
       status: string;
       trackerName: string;
+      projectName: string | null;
       startDate: string | null;
       dueDate: string | null;
     }>;
