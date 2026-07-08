@@ -29,7 +29,9 @@ public sealed class LogTimeReader : ILogTimeReader
 
         var monthStart = new DateOnly(reportDay.Year, reportDay.Month, 1);
         var monthEnd = monthStart.AddMonths(1).AddDays(-1);
-        var issues = await _repository.GetIssuesAsync(new RedmineIssueQuery
+
+        // Parallel: fetch issues and time entries simultaneously
+        var issuesTask = _repository.GetIssuesAsync(new RedmineIssueQuery
         {
             StatusId = "*",
             AssignedToId = userId,
@@ -37,12 +39,18 @@ public sealed class LogTimeReader : ILogTimeReader
             DueDate = $">={LegacyRedmineRules.FormatDate(monthStart)}",
             Sort = "start_date:asc,due_date:asc,id:asc"
         }, cancellationToken);
-        var filteredIssues = LegacyRedmineRules.SortIssues(issues.Where(LegacyRedmineRules.IsLoginTimeIssue)).ToList();
-        var entries = await _repository.GetTimeEntriesAsync(new RedmineTimeEntryQuery
+
+        var entriesTask = _repository.GetTimeEntriesAsync(new RedmineTimeEntryQuery
         {
             From = LegacyRedmineRules.FormatDate(monthStart),
             To = LegacyRedmineRules.FormatDate(monthEnd)
         }, cancellationToken);
+
+        await Task.WhenAll(issuesTask, entriesTask);
+
+        var issues = await issuesTask;
+        var entries = await entriesTask;
+        var filteredIssues = LegacyRedmineRules.SortIssues(issues.Where(LegacyRedmineRules.IsLoginTimeIssue)).ToList();
 
         var issueIds = filteredIssues.Select(issue => issue.Id).ToHashSet();
         var hoursByIssueId = new Dictionary<int, decimal>();
