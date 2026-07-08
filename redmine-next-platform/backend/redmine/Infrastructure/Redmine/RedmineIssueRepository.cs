@@ -2,7 +2,7 @@ namespace Redmine.Infrastructure.Redmine;
 
 public sealed class RedmineIssueRepository : IRedmineIssueRepository
 {
-    private const int PageSize = 100;
+    private const int PageSize = 500;
     private readonly IRedmineClientFacade _client;
 
     public RedmineIssueRepository(IRedmineClientFacade client)
