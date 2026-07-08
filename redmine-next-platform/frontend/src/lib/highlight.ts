@@ -1,16 +1,16 @@
 import { isDueTodayOrPast, isStartDateTodayOrPast, isStartDateBeyondThreshold } from "./date-utils";
 
 export function getProcessingHighlightClass(dueDate: string | null): string {
-  if (isDueTodayOrPast(dueDate)) return "bg-red-900/20";
+  if (isDueTodayOrPast(dueDate)) return "bg-red-500/10 dark:bg-red-500/20";
   return "";
 }
 
 export function getNotStartedHighlightClass(trackerName: string | null, startDate: string | null): string {
   if (isStartDateTodayOrPast(startDate)) {
-    if (trackerName === "開発") return "bg-red-900/20";
-    return "bg-red-900/20";
+    if (trackerName === "開発") return "bg-red-500/10 dark:bg-red-500/20";
+    return "bg-red-500/10 dark:bg-red-500/20";
   }
-  if (isStartDateBeyondThreshold(startDate)) return "bg-green-900/20";
+  if (isStartDateBeyondThreshold(startDate)) return "bg-green-500/10 dark:bg-green-500/20";
   return "";
 }
 
