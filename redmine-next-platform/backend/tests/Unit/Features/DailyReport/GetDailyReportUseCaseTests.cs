@@ -34,8 +34,8 @@ public sealed class GetDailyReportUseCaseTests
                             "Tuyen",
                             99,
                             [
-                                new DailyReportItem(201, "RM-201", "Fix mobile nav", "Done", "開発", "2026-07-03", "2026-07-08"),
-                                new DailyReportItem(202, "RM-202", "Refine report layout", "In Progress", "開発", "2026-07-03", "2026-07-09")
+                                new DailyReportItem(201, "#201", "Fix mobile nav", "Done", "開発", "2026-07-03", "2026-07-08"),
+                                new DailyReportItem(202, "#202", "Refine report layout", "In Progress", "開発", "2026-07-03", "2026-07-09")
                             ])
                     ],
                     new DailyReportGroup("other", "Other", 114, []))

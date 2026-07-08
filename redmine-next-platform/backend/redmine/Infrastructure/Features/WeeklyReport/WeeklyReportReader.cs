@@ -108,7 +108,7 @@ public sealed class WeeklyReportReader : IWeeklyReportReader
     private static WeeklyReportItem ToWeeklyItem(RedmineIssueDto issue)
         => new(
             issue.Id,
-            $"RM-{issue.Id}",
+            $"#{issue.Id}",
             issue.Project?.Name ?? string.Empty,
             issue.Subject,
             issue.Status?.Name ?? string.Empty,

@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { useDashboardIssues } from "@/hooks/queries/useDashboardIssues";
+import { getIssueUrl } from "@/lib/issue-url";
+import { getHighlightClass } from "@/lib/highlight";
 import type { DashboardIssueViewModel, DashboardIssueListViewModel } from "@/types/api/dashboard-issues";
+
+function formatDate(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 function getMondayOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -20,32 +29,19 @@ function getNextFriday(date: Date): Date {
   return friday;
 }
 
-function formatDate(d: Date): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function formatHours(hours: number | null): string {
+  if (hours === null || hours === undefined) return "-";
+  return `${hours}h`;
 }
 
-function getIssueUrl(issue: DashboardIssueViewModel): string {
-  return `https://redmine.wdm.co.jp/issues/${issue.id}`;
-}
-
-function isOverdue(issue: DashboardIssueViewModel): boolean {
-  if (!issue.dueDate) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return new Date(issue.dueDate) < today;
-}
-
-function IssueRow({ issue, index }: { issue: DashboardIssueViewModel; index: number }) {
-  const overdue = isOverdue(issue);
+function IssueRow({ issue, index, listName }: { issue: DashboardIssueViewModel; index: number; listName: string }) {
+  const highlightClass = getHighlightClass(issue.statusName, issue.trackerName, issue.dueDate, issue.startDate);
   return (
-    <tr className={overdue ? "bg-red-900/20" : ""}>
+    <tr className={highlightClass}>
       <td className="px-3 py-2 text-sm text-slate-400">{index + 1}</td>
       <td className="px-3 py-2 text-sm">
         <a
-          href={getIssueUrl(issue)}
+          href={getIssueUrl(issue.id)}
           target="_blank"
           rel="noopener noreferrer"
           className="text-sky-400 hover:text-sky-300 hover:underline"
@@ -57,10 +53,11 @@ function IssueRow({ issue, index }: { issue: DashboardIssueViewModel; index: num
       <td className="px-3 py-2 text-sm text-slate-300">{issue.projectName ?? "-"}</td>
       <td className="px-3 py-2 text-sm text-slate-300">{issue.trackerName ?? "-"}</td>
       <td className="px-3 py-2 text-sm text-slate-300">{issue.assigneeName ?? "-"}</td>
+      <td className="px-3 py-2 text-sm text-slate-300">{issue.statusName ?? "-"}</td>
       <td className="px-3 py-2 text-sm text-slate-300">{issue.startDate ?? "-"}</td>
       <td className="px-3 py-2 text-sm">
         {issue.dueDate ? (
-          <span className={overdue ? "text-red-400 font-medium" : "text-slate-300"}>
+          <span className={getHighlightClass(issue.statusName, issue.trackerName, issue.dueDate, issue.startDate) === "bg-red-900/20" ? "text-red-400 font-medium" : "text-slate-300"}>
             {issue.dueDate}
           </span>
         ) : (
@@ -78,6 +75,7 @@ function IssueRow({ issue, index }: { issue: DashboardIssueViewModel; index: num
           <span className="tabular-nums">{issue.doneRatio}%</span>
         </div>
       </td>
+      <td className="px-3 py-2 text-sm text-slate-300">{formatHours(issue.spentHours)}</td>
       <td className="px-3 py-2 text-sm text-slate-300">{issue.releaseTarget ?? "-"}</td>
     </tr>
   );
@@ -105,15 +103,17 @@ function IssueTable({ list, label }: { list: DashboardIssueListViewModel; label:
                 <th className="px-3 py-2 text-left font-medium">Project</th>
                 <th className="px-3 py-2 text-left font-medium">Tracker</th>
                 <th className="px-3 py-2 text-left font-medium">Assignee</th>
+                <th className="px-3 py-2 text-left font-medium">Status</th>
                 <th className="px-3 py-2 text-left font-medium">Start</th>
                 <th className="px-3 py-2 text-left font-medium">Due</th>
                 <th className="px-3 py-2 text-left font-medium">Progress</th>
+                <th className="px-3 py-2 text-left font-medium">Spent</th>
                 <th className="px-3 py-2 text-left font-medium">Release</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
               {list.issues.map((issue, index) => (
-                <IssueRow key={issue.id} issue={issue} index={index} />
+                <IssueRow key={issue.id} issue={issue} index={index} listName={list.name} />
               ))}
             </tbody>
           </table>
@@ -123,6 +123,20 @@ function IssueTable({ list, label }: { list: DashboardIssueListViewModel; label:
   );
 }
 
+function getVisibleIssues(
+  issues: DashboardIssueViewModel[],
+  listName: string,
+  filters: { hideNotStartedNonDevelopment: boolean; hideProcessedResearch: boolean }
+): DashboardIssueViewModel[] {
+  if (listName === "notStarted" && filters.hideNotStartedNonDevelopment) {
+    return issues.filter((i) => i.trackerName === "開発");
+  }
+  if (listName === "processed" && filters.hideProcessedResearch) {
+    return issues.filter((i) => i.trackerName !== "調査");
+  }
+  return issues;
+}
+
 export function DashboardIssuesPanel() {
   const today = new Date();
   const defaultStart = formatDate(getMondayOfWeek(today));
@@ -130,11 +144,17 @@ export function DashboardIssuesPanel() {
 
   const [startDate, setStartDate] = useState(defaultStart);
   const [endDate, setEndDate] = useState(defaultEnd);
+  const [hideNotStartedNonDevelopment, setHideNotStartedNonDevelopment] = useState(false);
+  const [hideProcessedResearch, setHideProcessedResearch] = useState(false);
   const { data, state, load } = useDashboardIssues();
 
   const handleLoad = () => {
     load(startDate, endDate);
   };
+
+  const visibleProcessing = data?.processing.issues ?? [];
+  const visibleNotStarted = getVisibleIssues(data?.notStarted.issues ?? [], "notStarted", { hideNotStartedNonDevelopment, hideProcessedResearch });
+  const visibleProcessed = getVisibleIssues(data?.processed.issues ?? [], "processed", { hideNotStartedNonDevelopment, hideProcessedResearch });
 
   return (
     <section className="space-y-4">
@@ -193,21 +213,42 @@ export function DashboardIssuesPanel() {
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
               <p className="text-sm text-slate-400">Processing</p>
-              <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{data.processing.issues.length}</p>
+              <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{visibleProcessing.length}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
               <p className="text-sm text-slate-400">Not Started</p>
-              <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{data.notStarted.issues.length}</p>
+              <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{visibleNotStarted.length}</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
               <p className="text-sm text-slate-400">Processed</p>
-              <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{data.processed.issues.length}</p>
+              <p className="mt-2 text-3xl font-semibold tabular-nums text-white">{visibleProcessed.length}</p>
             </div>
           </div>
 
-          <IssueTable list={data.processing} label="Processing (処理中)" />
-          <IssueTable list={data.notStarted} label="Not Started (未対応)" />
-          <IssueTable list={data.processed} label="Processed (処理済み)" />
+          <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hideNotStartedNonDevelopment}
+                onChange={(e) => setHideNotStartedNonDevelopment(e.target.checked)}
+                className="rounded border-white/20 bg-black/30"
+              />
+              Hide non-開発 (Not Started)
+            </label>
+            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hideProcessedResearch}
+                onChange={(e) => setHideProcessedResearch(e.target.checked)}
+                className="rounded border-white/20 bg-black/30"
+              />
+              Hide 調査 (Processed)
+            </label>
+          </div>
+
+          <IssueTable list={{ name: data.processing.name, issues: visibleProcessing }} label="Processing (処理中)" />
+          <IssueTable list={{ name: data.notStarted.name, issues: visibleNotStarted }} label="Not Started (未対応)" />
+          <IssueTable list={{ name: data.processed.name, issues: visibleProcessed }} label="Processed (処理済み)" />
         </div>
       )}
     </section>

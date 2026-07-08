@@ -20,7 +20,7 @@ public sealed class MyTaskReaderTests
         var result = await reader.GetForUserAsync("tuyennguyen", "2026-07-01", "2026-07-05", CancellationToken.None);
 
         Assert.NotNull(result);
-        Assert.Equal(["RM-101", "RM-102"], result!.Items.Select(item => item.IssueKey).ToArray());
+        Assert.Equal(["#101", "#102"], result!.Items.Select(item => item.IssueKey).ToArray());
         Assert.Contains(repository.Queries, query =>
             query.AssignedToId == 99 &&
             query.StatusId == "*" &&

@@ -6,4 +6,12 @@ public sealed record GetLogTimeResponseContract(
     string ReportDate,
     IReadOnlyList<GetLogTimeItemResponseContract> Items);
 
-public sealed record GetLogTimeItemResponseContract(string IssueKey, string Subject, string Status, decimal HoursLogged);
+public sealed record GetLogTimeItemResponseContract(
+    int IssueId,
+    string IssueKey,
+    string Subject,
+    string Status,
+    decimal HoursLogged,
+    string? AssigneeName,
+    string? StartDate,
+    string? DueDate);

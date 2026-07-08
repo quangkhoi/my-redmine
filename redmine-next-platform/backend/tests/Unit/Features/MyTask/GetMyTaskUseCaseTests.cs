@@ -28,8 +28,8 @@ public sealed class GetMyTaskUseCaseTests
                     "tuyennguyen",
                     "tuyennguyen",
                     [
-                        new MyTaskItem("RM-101", "Fix login redirect", "In Progress"),
-                        new MyTaskItem("RM-102", "Update dashboard cards", "Open")
+                        new MyTaskItem("#101", "Fix login redirect", "In Progress", "Project", "2026-07-01", "2026-07-10", 50, "開発"),
+                        new MyTaskItem("#102", "Update dashboard cards", "Open", "Project", "2026-07-02", "2026-07-12", 0, "開発")
                     ])
                 : null;
 

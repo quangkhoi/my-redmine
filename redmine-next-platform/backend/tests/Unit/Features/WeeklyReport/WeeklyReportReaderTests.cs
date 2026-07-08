@@ -48,7 +48,7 @@ public sealed class WeeklyReportReaderTests
         Assert.Equal("2026-07-03", result.ExportRange.To);
 
         Assert.Single(result.PrevCsharp);
-        Assert.Equal("RM-101", result.PrevCsharp[0].IssueKey);
+        Assert.Equal("#101", result.PrevCsharp[0].IssueKey);
         Assert.Equal(2m, result.PrevCsharp[0].ReportSpentHours);
 
         Assert.Empty(result.PrevWeb);

@@ -42,6 +42,14 @@ public sealed class MyTaskReader : IMyTaskReader
         return new MyTaskSummary(
             userName,
             userName,
-            filtered.Select(issue => new MyTaskItem($"RM-{issue.Id}", issue.Subject, issue.Status?.Name ?? "Open")).ToList());
+            filtered.Select(issue => new MyTaskItem(
+                $"#{issue.Id}",
+                issue.Subject,
+                issue.Status?.Name ?? "Open",
+                issue.Project?.Name,
+                issue.StartDate,
+                issue.DueDate,
+                issue.DoneRatio,
+                issue.Tracker?.Name)).ToList());
     }
 }

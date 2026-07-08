@@ -6,4 +6,12 @@ public sealed record GetLogTimeResponse(
     string ReportDate,
     IReadOnlyList<GetLogTimeItemResponse> Items);
 
-public sealed record GetLogTimeItemResponse(string IssueKey, string Subject, string Status, decimal HoursLogged);
+public sealed record GetLogTimeItemResponse(
+    int IssueId,
+    string IssueKey,
+    string Subject,
+    string Status,
+    decimal HoursLogged,
+    string? AssigneeName,
+    string? StartDate,
+    string? DueDate);

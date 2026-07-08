@@ -63,9 +63,13 @@ public sealed class LogTimeReader : ILogTimeReader
             userName,
             reportDate,
             filteredIssues.Select(issue => new LogTimeItem(
-                $"RM-{issue.Id}",
+                issue.Id,
+                $"#{issue.Id}",
                 issue.Subject,
                 issue.Status?.Name ?? string.Empty,
-                hoursByIssueId.GetValueOrDefault(issue.Id))).ToList());
+                hoursByIssueId.GetValueOrDefault(issue.Id),
+                issue.AssignedTo?.Name,
+                issue.StartDate,
+                issue.DueDate)).ToList());
     }
 }

@@ -109,7 +109,7 @@ public sealed class DailyReportReader : IDailyReportReader
     private static DailyReportItem ToItem(RedmineIssueDto issue)
         => new(
             issue.Id,
-            $"RM-{issue.Id}",
+            $"#{issue.Id}",
             issue.Subject,
             issue.Status?.Name ?? string.Empty,
             LegacyRedmineRules.GetTrackerName(issue),

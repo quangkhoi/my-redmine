@@ -33,6 +33,6 @@ public sealed class GetLogTimeHandler
             summary.UserName,
             summary.DisplayName,
             summary.ReportDate,
-            summary.Items.Select(item => new GetLogTimeItemResponse(item.IssueKey, item.Subject, item.Status, item.HoursLogged)).ToList());
+            summary.Items.Select(item => new GetLogTimeItemResponse(item.IssueId, item.IssueKey, item.Subject, item.Status, item.HoursLogged, item.AssigneeName, item.StartDate, item.DueDate)).ToList());
     }
 }

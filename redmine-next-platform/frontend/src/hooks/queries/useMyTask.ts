@@ -10,14 +10,14 @@ type TaskState =
   | { kind: "empty" }
   | { kind: "error"; message: string };
 
-export function useMyTask(userName: string) {
+export function useMyTask(userName: string, startDate?: string, endDate?: string) {
   const [data, setData] = useState<MyTaskViewModel | null>(null);
   const [state, setState] = useState<TaskState>({ kind: "loading" });
 
   useEffect(() => {
     let active = true;
 
-    getMyTask(userName)
+    getMyTask(userName, startDate, endDate)
       .then((result) => {
         if (!active) {
           return;
@@ -42,7 +42,7 @@ export function useMyTask(userName: string) {
     return () => {
       active = false;
     };
-  }, [userName]);
+  }, [userName, startDate, endDate]);
 
   return { data, state };
 }

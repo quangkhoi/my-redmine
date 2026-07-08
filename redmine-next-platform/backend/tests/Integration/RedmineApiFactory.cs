@@ -56,7 +56,7 @@ public sealed class RedmineApiFactory : WebApplicationFactory<Program>
                         "Tuyen",
                         99,
                         [
-                            new DailyReportItem(1001, "RM-1001", "Fix login", "In Progress", "開発", reportDate, "2026-07-08")
+                            new DailyReportItem(1001, "#1001", "Fix login", "In Progress", "開発", reportDate, "2026-07-08")
                         ])
                 ],
                 new DailyReportGroup("other", "Other", 114, [])));
@@ -66,7 +66,7 @@ public sealed class RedmineApiFactory : WebApplicationFactory<Program>
     {
         public Task<MyTaskSummary?> GetForUserAsync(string userName, string? startDate, string? endDate, CancellationToken cancellationToken)
             => Task.FromResult<MyTaskSummary?>(new MyTaskSummary(userName, userName, [
-                new MyTaskItem("RM-1001", "Fix login", "In Progress")
+                new MyTaskItem("#1001", "Fix login", "In Progress", "Test Project", "2026-07-01", "2026-07-10", 50, "開発")
             ]));
     }
 
@@ -74,7 +74,7 @@ public sealed class RedmineApiFactory : WebApplicationFactory<Program>
     {
         public Task<LogTimeSummary?> GetForUserAsync(string reportDate, string userName, CancellationToken cancellationToken)
             => Task.FromResult<LogTimeSummary?>(new LogTimeSummary(userName, userName, reportDate, [
-                new LogTimeItem("RM-1001", "Fix login", "Logged", 3.5m)
+                new LogTimeItem(1001, "#1001", "Fix login", "Logged", 3.5m, "Test User", "2026-07-01", "2026-07-10")
             ]));
     }
 
@@ -87,7 +87,7 @@ public sealed class RedmineApiFactory : WebApplicationFactory<Program>
                 new WeeklyReportRange("2026-06-29", "2026-07-10"),
                 new WeeklyReportRange("2026-06-29", "2026-07-03"),
                 [
-                    new WeeklyReportItem(1001, "RM-1001", "Project", "Fix login", "In Progress", "開発", "2026-06-29", "2026-07-03", 3m)
+                    new WeeklyReportItem(1001, "#1001", "Project", "Fix login", "In Progress", "開発", "2026-06-29", "2026-07-03", 3m)
                 ],
                 [],
                 [],

@@ -4,9 +4,18 @@ import type { MyTaskApiResponse, MyTaskViewModel } from "@/types/api/my-task";
 
 type ApiResult = { kind: "ok"; data: MyTaskViewModel } | { kind: "error"; message: string };
 
-export async function getMyTask(userName: string): Promise<ApiResult> {
+export async function getMyTask(
+  userName: string,
+  startDate?: string,
+  endDate?: string
+): Promise<ApiResult> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/my-task/${encodeURIComponent(userName)}`);
+    const params = new URLSearchParams();
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
+    const qs = params.toString();
+    const url = `${API_BASE_URL}/api/my-task/${encodeURIComponent(userName)}${qs ? `?${qs}` : ""}`;
+    const response = await fetch(url);
     if (!response.ok) {
       return { kind: "error", message: normalizeApiError(response.status) };
     }

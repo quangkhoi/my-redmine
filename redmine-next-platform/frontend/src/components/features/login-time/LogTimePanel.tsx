@@ -1,16 +1,40 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { useLogTime } from "@/hooks/queries/useLogTime";
 import { useTranslations } from "next-intl";
+import { ASSIGNEES } from "@/config/team";
+import { getIssueUrl } from "@/lib/issue-url";
+import { formatDisplayDate } from "@/lib/date-utils";
 
-type Props = {
-  reportDate: string;
-  userName: string;
-};
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 7 }, (_, i) => CURRENT_YEAR - 3 + i);
+const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
-export function LogTimePanel({ reportDate, userName }: Props) {
+function buildReportDate(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, "0")}-01`;
+}
+
+export function LogTimePanel({ reportDate: initialReportDate, userName: initialUserName }: { reportDate: string; userName: string }) {
   const t = useTranslations("logTime");
+
+  const now = new Date();
+  const [selectedUser, setSelectedUser] = useState("ALL");
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+
+  const reportDate = buildReportDate(year, month);
+  const userName = initialUserName;
+
   const { data, state } = useLogTime(reportDate, userName);
+
+  const filteredItems = useMemo(() => {
+    if (!data) return [];
+    if (selectedUser === "ALL") return data.items;
+    const user = ASSIGNEES.find(a => a.login === selectedUser);
+    if (!user) return data.items;
+    return data.items.filter(item => item.assigneeName === user.name);
+  }, [data, selectedUser]);
 
   return (
     <section className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur">
@@ -18,48 +42,97 @@ export function LogTimePanel({ reportDate, userName }: Props) {
       <h2 className="mt-4 text-3xl font-semibold">{t("title")}</h2>
       <p className="mt-2 max-w-2xl text-sm text-slate-300">{t("description")}</p>
 
-      <div className="mt-8 rounded-2xl border border-white/10 bg-slate-900/80 p-5">
-        {state.kind === "loading" && <p className="text-slate-300">{t("loading")}</p>}
-        {state.kind === "error" && <p className="text-rose-300">{state.message}</p>}
-        {state.kind === "empty" && <p className="text-slate-300">{t("empty")}</p>}
-        {state.kind === "ready" && data && (
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-6">
-              <div>
-                <p className="text-sm text-slate-400">{t("reportDate")}</p>
-                <p className="text-lg font-medium">{data.reportDate}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-400">{t("userName")}</p>
-                <p className="text-lg font-medium">{data.displayName}</p>
-              </div>
-            </div>
+      {/* Controls */}
+      <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-[11px] uppercase tracking-[0.2em] text-slate-400">User</label>
+          <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}
+            className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-sky-400/60">
+            <option value="ALL">ALL</option>
+            {ASSIGNEES.map((a) => (
+              <option key={a.login} value={a.login}>{a.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Year</label>
+          <select value={year} onChange={(e) => setYear(Number(e.target.value))}
+            className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-sky-400/60">
+            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Month</label>
+          <select value={month} onChange={(e) => setMonth(Number(e.target.value))}
+            className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-sky-400/60">
+            {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+      </div>
 
-            <div className="overflow-hidden rounded-2xl border border-white/10">
-              <div className="hidden grid-cols-[1fr_2fr_0.8fr_0.6fr] gap-4 border-b border-white/10 bg-black/30 px-4 py-3 text-xs uppercase tracking-[0.2em] text-slate-400 md:grid">
-                <span>{t("columns.issue")}</span>
-                <span>{t("columns.subject")}</span>
-                <span>{t("columns.status")}</span>
-                <span>{t("columns.hours")}</span>
-              </div>
-              <div className="divide-y divide-white/10">
-                {data.items.map((item) => (
-                  <div key={item.issueKey} className="grid gap-2 px-4 py-3 text-sm transition hover:bg-white/[0.04] md:grid-cols-[1fr_2fr_0.8fr_0.6fr] md:items-center">
-                    <div className="text-sky-300">{item.issueKey}</div>
+      {/* States */}
+      {state.kind === "loading" && <p className="mt-4 text-slate-300">{t("loading")}</p>}
+      {state.kind === "error" && <p className="mt-4 text-rose-300">{state.message}</p>}
+      {state.kind === "empty" && <p className="mt-4 text-slate-300">{t("empty")}</p>}
+
+      {state.kind === "ready" && (
+        <div className="mt-6 space-y-4">
+          <div className="flex flex-wrap gap-6">
+            <div>
+              <p className="text-sm text-slate-400">{t("reportDate")}</p>
+              <p className="text-lg font-medium">{year}/{String(month).padStart(2, "0")}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-400">{t("userName")}</p>
+              <p className="text-lg font-medium">{data?.displayName ?? userName}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-400">Issues</p>
+              <p className="text-lg font-medium">{filteredItems.length}</p>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-white/10">
+            <div className="hidden grid-cols-[0.5fr_0.8fr_0.6fr_2fr_1fr_0.8fr_0.8fr_0.8fr] gap-4 border-b border-white/10 bg-black/30 px-4 py-3 text-xs uppercase tracking-[0.2em] text-slate-400 md:grid">
+              <span>#</span>
+              <span>{t("columns.issue")}</span>
+              <span>{t("columns.hours")}</span>
+              <span>{t("columns.subject")}</span>
+              <span>Assignee</span>
+              <span>{t("columns.status")}</span>
+              <span>Start</span>
+              <span>Due</span>
+            </div>
+            <div className="divide-y divide-white/10">
+              {filteredItems.map((item, index) => {
+                const issueId = item.issueId;
+                return (
+                  <div key={item.issueKey} className="grid gap-2 px-4 py-3 text-sm transition hover:bg-white/[0.04] md:grid-cols-[0.5fr_0.8fr_0.6fr_2fr_1fr_0.8fr_0.8fr_0.8fr] md:items-center">
+                    <div className="text-slate-400">{index + 1}</div>
+                    <div>
+                      <a href={getIssueUrl(issueId)} target="_blank" rel="noopener noreferrer" className="text-sky-300 hover:text-sky-200 hover:underline">
+                        {item.issueKey}
+                      </a>
+                    </div>
+                    <div className="text-slate-300 tabular-nums">{item.hoursLogged}h</div>
                     <div className="text-white">{item.subject}</div>
+                    <div className="text-slate-300">{item.assigneeName ?? "-"}</div>
                     <div>
                       <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
                         {item.status}
                       </span>
                     </div>
-                    <div className="text-slate-300 tabular-nums">{item.hoursLogged}h</div>
+                    <div className="text-slate-300">{formatDisplayDate(item.startDate)}</div>
+                    <div className={item.dueDate && new Date(item.dueDate) < new Date() ? "text-red-400 font-medium" : "text-slate-300"}>
+                      {formatDisplayDate(item.dueDate)}
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

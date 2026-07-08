@@ -25,8 +25,24 @@ public sealed class LogTimeReaderTests
 
         Assert.NotNull(result);
         Assert.Equal(2, result!.Items.Count);
-        Assert.Equal(3.5m, result.Items.Single(item => item.IssueKey == "RM-201").HoursLogged);
-        Assert.Equal(4m, result.Items.Single(item => item.IssueKey == "RM-202").HoursLogged);
+
+        var item201 = result.Items.Single(item => item.IssueKey == "#201");
+        Assert.Equal(201, item201.IssueId);
+        Assert.Equal("Keep Logged", item201.Subject);
+        Assert.Equal("処理中", item201.Status);
+        Assert.Equal(3.5m, item201.HoursLogged);
+        Assert.Equal("Tuyen", item201.AssigneeName);
+        Assert.Equal("2026-07-01", item201.StartDate);
+        Assert.Equal("2026-07-31", item201.DueDate);
+
+        var item202 = result.Items.Single(item => item.IssueKey == "#202");
+        Assert.Equal(202, item202.IssueId);
+        Assert.Equal("Keep Done Ratio", item202.Subject);
+        Assert.Equal("処理済み", item202.Status);
+        Assert.Equal(4m, item202.HoursLogged);
+        Assert.Equal("Tuyen", item202.AssigneeName);
+        Assert.Equal("2026-07-05", item202.StartDate);
+        Assert.Equal("2026-07-10", item202.DueDate);
         Assert.Contains(repository.IssueQueries, query =>
             query.AssignedToId == 99 &&
             query.StatusId == "*" &&

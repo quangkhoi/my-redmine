@@ -32,6 +32,6 @@ public sealed class GetMyTaskHandler
         return new GetMyTaskResponse(
             summary.UserName,
             summary.DisplayName,
-            summary.Items.Select(item => new GetMyTaskItemResponse(item.IssueKey, item.Subject, item.Status)).ToList());
+            summary.Items.Select(item => new GetMyTaskItemResponse(item.IssueKey, item.Subject, item.Status, item.ProjectName, item.StartDate, item.DueDate, item.DoneRatio, item.TrackerName)).ToList());
     }
 }
