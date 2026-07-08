@@ -116,7 +116,7 @@ export function WeeklyReportPanel() {
     const rangeFrom = new Date(data.exportRange.from);
     const rangeTo = new Date(data.exportRange.to);
     const pad2 = (n: number) => String(n).padStart(2, "0");
-    const title = `週報（${rangeFrom.getFullYear()}年${pad2(rangeFrom.getMonth() + 1)}月${pad2(rangeFrom.getDate())}日〜${rangeTo.getFullYear()}年${pad2(rangeTo.getMonth() + 1)}月${pad2(rangeTo.getDate())}日）`;
+    const title = `週報（${rangeFrom.getFullYear()}年${rangeFrom.getMonth() + 1}月${rangeFrom.getDate()}日〜${rangeTo.getFullYear()}年${rangeTo.getMonth() + 1}月${rangeTo.getDate()}日）`;
     rows.push([title]);
     rows.push([]);
 
@@ -129,6 +129,8 @@ export function WeeklyReportPanel() {
         return selectedIds.size === 0 || selectedIds.has(key);
       });
 
+      if (selected.length === 0) continue;
+
       if (cfg.isSectionStart) {
         rows.push([cfg.sectionTitle]);
         rows.push([]);
@@ -136,7 +138,7 @@ export function WeeklyReportPanel() {
       rows.push([cfg.teamTitle]);
       rows.push([...COLUMN_HEADERS]);
 
-      const exportItems = selected.length > 0 ? selected : [null];
+      const exportItems = selected;
       for (const item of exportItems) {
         rowNum++;
         if (!item) {
