@@ -2,52 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 98%;
+    --card-foreground: 222 47% 11%;
+    --primary: 198 93% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 198 93% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 198 93% 50%;
+    --sidebar-bg: 210 40% 98%;
+    --sidebar-text: 215 25% 27%;
+    --sidebar-muted: 215 16% 47%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 240 6% 3%;
+    --foreground: 210 40% 98%;
+    --card: 240 6% 5%;
+    --card-foreground: 210 40% 98%;
+    --primary: 198 93% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 198 93% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 63% 31%;
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
+    --ring: 198 93% 50%;
+    --sidebar-bg: 240 6% 3%;
+    --sidebar-text: 215 20% 65%;
+    --sidebar-muted: 215 20% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
 /* Report section/team/spacer rows */
 .report-section-row td {
-  background: rgba(255, 255, 255, 0.05);
-  border-bottom: 0;
-  font-size: 16px;
-  font-weight: 800;
-  padding: 18px 14px 10px;
+  background: hsl(var(--secondary));
+  font-weight: 600;
 }
-
 .report-team-row td {
-  background: rgba(15, 118, 110, 0.1);
-  color: #5eead4;
-  font-weight: 800;
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  font-weight: 600;
 }
-
 .report-spacer-row td {
   height: 28px;
-  border-bottom: 0;
-  padding: 0;
 }
-
 .report-selection-control {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-width: 48px;
 }
-
 .report-selection-control input {
+  accent-color: hsl(var(--primary));
   width: 15px;
   height: 15px;
-  accent-color: #0f766e;
+  cursor: pointer;
 }
-
 .report-row-excluded td {
-  background: rgba(255, 255, 255, 0.02);
-  color: #64748b;
-  text-decoration: line-through;
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
 }
-
-.report-row-excluded .issue-link {
-  color: #64748b;
-}
-
-.report-row-excluded:hover td {
-  background: rgba(255, 255, 255, 0.04);
-}
-
