@@ -28,7 +28,9 @@ public sealed class DailyReportReader : IDailyReportReader
         }
 
         var day = LegacyRedmineRules.FormatDate(reportDay);
-        var todayIssues = await FetchIssuesForAssigneesAsync(
+
+        // Parallel: fetch all 3 query groups simultaneously
+        var todayIssuesTask = FetchIssuesForAssigneesAsync(
             LegacyRedmineRules.DailyReportAssigneeIds,
             new RedmineIssueQuery
             {
@@ -37,7 +39,8 @@ public sealed class DailyReportReader : IDailyReportReader
                 Sort = "start_date:asc,due_date:asc,id:asc"
             },
             cancellationToken);
-        var processingIssues = await FetchIssuesForAssigneesAsync(
+
+        var processingIssuesTask = FetchIssuesForAssigneesAsync(
             LegacyRedmineRules.DailyReportAssigneeIds,
             new RedmineIssueQuery
             {
@@ -45,7 +48,8 @@ public sealed class DailyReportReader : IDailyReportReader
                 Sort = "start_date:asc,due_date:asc,id:asc"
             },
             cancellationToken);
-        var otherIssues = await FetchIssuesForAssigneesAsync(
+
+        var otherIssuesTask = FetchIssuesForAssigneesAsync(
             [LegacyRedmineRules.DailyReportOtherAssigneeId],
             new RedmineIssueQuery
             {
@@ -54,6 +58,12 @@ public sealed class DailyReportReader : IDailyReportReader
                 Sort = "start_date:asc,due_date:asc,id:asc"
             },
             cancellationToken);
+
+        await Task.WhenAll(todayIssuesTask, processingIssuesTask, otherIssuesTask);
+
+        var todayIssues = await todayIssuesTask;
+        var processingIssues = await processingIssuesTask;
+        var otherIssues = await otherIssuesTask;
 
         var mergedIssues = LegacyRedmineRules.SortIssues(LegacyRedmineRules.UniqueIssues(
             todayIssues.Where(issue => issue.AssignedTo?.Id != LegacyRedmineRules.DailyReportOtherAssigneeId)
