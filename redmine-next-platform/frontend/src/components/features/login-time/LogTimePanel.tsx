@@ -44,17 +44,17 @@ export function LogTimePanel({ reportDate: initialReportDate, userName: initialU
   }, [data, selectedUser, searchTerm]);
 
   return (
-    <section className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur">
-      <p className="text-sm uppercase tracking-[0.3em] text-amber-300">{t("eyebrow")}</p>
+    <section className="w-full rounded-3xl border border-border bg-secondary p-8 shadow-2xl shadow-black/30 backdrop-blur">
+      <p className="text-sm uppercase tracking-[0.3em] text-amber-600 dark:text-amber-300">{t("eyebrow")}</p>
       <h2 className="mt-4 text-3xl font-semibold">{t("title")}</h2>
-      <p className="mt-2 max-w-2xl text-sm text-slate-300">{t("description")}</p>
+      <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("description")}</p>
 
       {/* Controls */}
-      <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] uppercase tracking-[0.2em] text-slate-400">User</label>
+          <label className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">User</label>
           <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}
-            className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-sky-400/60">
+            className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-foreground outline-none focus:border-primary/60">
             <option value="ALL">ALL</option>
             {ASSIGNEES.map((a) => (
               <option key={a.login} value={a.login}>{a.name}</option>
@@ -62,45 +62,45 @@ export function LogTimePanel({ reportDate: initialReportDate, userName: initialU
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Year</label>
+          <label className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Year</label>
           <select value={year} onChange={(e) => setYear(Number(e.target.value))}
-            className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-sky-400/60">
+            className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-foreground outline-none focus:border-primary/60">
             {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Month</label>
+          <label className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Month</label>
           <select value={month} onChange={(e) => setMonth(Number(e.target.value))}
-            className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-sky-400/60">
+            className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-foreground outline-none focus:border-primary/60">
             {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
       </div>
 
       {/* States */}
-      {state.kind === "loading" && <p className="mt-4 text-slate-300">{t("loading")}</p>}
-      {state.kind === "error" && <p className="mt-4 text-rose-300">{state.message}</p>}
-      {state.kind === "empty" && <p className="mt-4 text-slate-300">{t("empty")}</p>}
+      {state.kind === "loading" && <p className="mt-4 text-muted-foreground">{t("loading")}</p>}
+      {state.kind === "error" && <p className="mt-4 text-red-600 dark:text-red-300">{state.message}</p>}
+      {state.kind === "empty" && <p className="mt-4 text-muted-foreground">{t("empty")}</p>}
 
       {state.kind === "ready" && (
         <div className="mt-6 space-y-4">
           <div className="flex flex-wrap gap-6">
             <div>
-              <p className="text-sm text-slate-400">{t("reportDate")}</p>
+              <p className="text-sm text-muted-foreground">{t("reportDate")}</p>
               <p className="text-lg font-medium">{year}/{String(month).padStart(2, "0")}</p>
             </div>
             <div>
-              <p className="text-sm text-slate-400">{t("userName")}</p>
+              <p className="text-sm text-muted-foreground">{t("userName")}</p>
               <p className="text-lg font-medium">{data?.displayName ?? userName}</p>
             </div>
             <div>
-              <p className="text-sm text-slate-400">Issues</p>
+              <p className="text-sm text-muted-foreground">Issues</p>
               <p className="text-lg font-medium">{filteredItems.length}</p>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-white/10">
-            <div className="hidden grid-cols-[0.5fr_0.8fr_0.6fr_2fr_1fr_0.8fr_0.8fr_0.8fr] gap-4 border-b border-white/10 bg-black/30 px-4 py-3 text-xs uppercase tracking-[0.2em] text-slate-400 md:grid">
+          <div className="overflow-hidden rounded-2xl border border-border">
+            <div className="hidden grid-cols-[0.5fr_0.8fr_0.6fr_2fr_1fr_0.8fr_0.8fr_0.8fr] gap-4 border-b border-border bg-secondary px-4 py-3 text-xs uppercase tracking-[0.2em] text-muted-foreground md:grid">
               <span>#</span>
               <span>{t("columns.issue")}</span>
               <span>{t("columns.hours")}</span>
@@ -110,27 +110,27 @@ export function LogTimePanel({ reportDate: initialReportDate, userName: initialU
               <span>Start</span>
               <span>Due</span>
             </div>
-            <div className="divide-y divide-white/10">
+            <div className="divide-y divide-border">
               {filteredItems.map((item, index) => {
                 const issueId = item.issueId;
                 return (
-                  <div key={item.issueKey} className="grid gap-2 px-4 py-3 text-sm transition hover:bg-white/[0.04] md:grid-cols-[0.5fr_0.8fr_0.6fr_2fr_1fr_0.8fr_0.8fr_0.8fr] md:items-center">
-                    <div className="text-slate-400">{index + 1}</div>
+                  <div key={item.issueKey} className="grid gap-2 px-4 py-3 text-sm transition hover:bg-card md:grid-cols-[0.5fr_0.8fr_0.6fr_2fr_1fr_0.8fr_0.8fr_0.8fr] md:items-center">
+                    <div className="text-muted-foreground">{index + 1}</div>
                     <div>
-                      <a href={getIssueUrl(issueId)} target="_blank" rel="noopener noreferrer" className="text-sky-300 hover:text-sky-200 hover:underline">
+                      <a href={getIssueUrl(issueId)} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 hover:underline">
                         {item.issueKey}
                       </a>
                     </div>
-                    <div className="text-slate-300 tabular-nums">{item.hoursLogged}h</div>
-                    <div className="text-white"><SearchHighlight text={item.subject} term={searchTerm} /></div>
-                    <div className="text-slate-300"><SearchHighlight text={item.assigneeName ?? "-"} term={searchTerm} /></div>
+                    <div className="text-muted-foreground tabular-nums">{item.hoursLogged}h</div>
+                    <div className="text-foreground"><SearchHighlight text={item.subject} term={searchTerm} /></div>
+                    <div className="text-muted-foreground"><SearchHighlight text={item.assigneeName ?? "-"} term={searchTerm} /></div>
                     <div>
-                      <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
+                      <span className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 text-xs text-card-foreground">
                         <SearchHighlight text={item.status} term={searchTerm} />
                       </span>
                     </div>
-                    <div className="text-slate-300">{formatDisplayDate(item.startDate)}</div>
-                    <div className={item.dueDate && new Date(item.dueDate) < new Date() ? "text-red-400 font-medium" : "text-slate-300"}>
+                    <div className="text-muted-foreground">{formatDisplayDate(item.startDate)}</div>
+                    <div className={item.dueDate && new Date(item.dueDate) < new Date() ? "text-red-600 dark:text-red-400 font-medium" : "text-muted-foreground"}>
                       {formatDisplayDate(item.dueDate)}
                     </div>
                   </div>
