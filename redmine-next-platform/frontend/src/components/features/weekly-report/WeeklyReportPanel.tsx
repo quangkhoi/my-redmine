@@ -9,19 +9,41 @@ import { getMondayOfWeek, formatDate } from "@/lib/date-utils";
 import { filterBySearch, buildSearchText } from "@/lib/search";
 import { SearchHighlight } from "@/components/ui/SearchHighlight";
 
-function formatDisplayDate(dateStr: string | null): string {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("ja-JP");
+function formatExcelDate(dateStr: string | null): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}/${m}/${day}`;
 }
 
-function formatExportDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+const COLUMN_HEADERS = ["No", "クライアント名", "チケットID", "タイトル", "課題", "ステータス", "開始日", "終了日"];
+
+type SectionKey = "prevCsharp" | "prevWeb" | "currentCsharp" | "currentWeb";
+
+interface SectionConfig {
+  key: SectionKey;
+  teamTitle: string;
+  isSectionStart: boolean;
+  sectionTitle: string;
+}
+
+function buildSectionConfigs(hasPrevious: boolean): SectionConfig[] {
+  const configs: SectionConfig[] = [];
+  if (hasPrevious) {
+    configs.push({ key: "prevCsharp", teamTitle: "C#開発", isSectionStart: true, sectionTitle: "■先週の作業" });
+    configs.push({ key: "prevWeb", teamTitle: "WEB開発", isSectionStart: false, sectionTitle: "" });
+  }
+  configs.push({ key: "currentCsharp", teamTitle: "C#開発", isSectionStart: true, sectionTitle: "◆今週の計画" });
+  configs.push({ key: "currentWeb", teamTitle: "WEB開発", isSectionStart: false, sectionTitle: "" });
+  return configs;
 }
 
 export function WeeklyReportPanel() {
   const t = useTranslations("weeklyReport");
   const [weekStart, setWeekStart] = useState(() => formatDate(getMondayOfWeek(new Date())));
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { data, state } = useWeeklyReport(weekStart, "tuyennguyen");
   const { searchTerm } = useSearch();
@@ -37,52 +59,100 @@ export function WeeklyReportPanel() {
     }));
   }, [data, searchTerm]);
 
+  const sectionConfigs = useMemo(
+    () => (data ? buildSectionConfigs(data.hasPrevious) : []),
+    [data],
+  );
+
+  const sectionMap = useMemo(() => {
+    const map = new Map<string, typeof filteredSections[number]>();
+    for (const s of filteredSections) map.set(s.key, s);
+    return map;
+  }, [filteredSections]);
+
+  const allIssueKeys = useMemo(() => {
+    const keys: string[] = [];
+    for (const cfg of sectionConfigs) {
+      const section = sectionMap.get(cfg.key);
+      if (section) {
+        for (const item of section.items) {
+          keys.push(`${cfg.key}-${item.issueId}`);
+        }
+      }
+    }
+    return keys;
+  }, [sectionConfigs, sectionMap]);
+
+  const allSelected = allIssueKeys.length > 0 && allIssueKeys.every((k) => selectedIds.has(k));
+
+  const toggleAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (allSelected) return new Set();
+      return new Set(allIssueKeys);
+    });
+  }, [allSelected, allIssueKeys]);
+
+  const toggleRow = useCallback((key: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  const isRowSelected = useCallback(
+    (key: string) => selectedIds.size === 0 || selectedIds.has(key),
+    [selectedIds],
+  );
+
   const handleExport = useCallback(async () => {
     if (!data) return;
 
     const XLSX = await import("xlsx");
-
     const wb = XLSX.utils.book_new();
-
-    const rows: (string | number)[][] = [];
+    const rows: (string | number | { text: string | number; hyperlink: string })[][] = [];
 
     const rangeFrom = new Date(data.exportRange.from);
     const rangeTo = new Date(data.exportRange.to);
-    const title = `週報（${rangeFrom.getFullYear()}年${rangeFrom.getMonth() + 1}月${rangeFrom.getDate()}日〜${rangeTo.getFullYear()}年${rangeTo.getMonth() + 1}月${rangeTo.getDate()}日）`;
+    const pad2 = (n: number) => String(n).padStart(2, "0");
+    const title = `週報（${rangeFrom.getFullYear()}年${pad2(rangeFrom.getMonth() + 1)}月${pad2(rangeFrom.getDate())}日〜${rangeTo.getFullYear()}年${pad2(rangeTo.getMonth() + 1)}月${pad2(rangeTo.getDate())}日）`;
     rows.push([title]);
     rows.push([]);
 
-    const sectionHeaders = [
-      { key: "prevCsharp" as const, sectionTitle: "■先週の作業", teamTitle: "C#開発" },
-      { key: "prevWeb" as const, sectionTitle: "", teamTitle: "WEB開発" },
-      { key: "currentCsharp" as const, sectionTitle: "◆今週の計画", teamTitle: "C#開発" },
-      { key: "currentWeb" as const, sectionTitle: "", teamTitle: "WEB開発" },
-    ];
-
     let rowNum = 0;
-    for (const section of sectionHeaders) {
-      const items = data.sections.find((s) => s.key === section.key)?.items ?? [];
-      if (items.length === 0) continue;
+    for (const cfg of sectionConfigs) {
+      const section = sectionMap.get(cfg.key);
+      const items = section?.items ?? [];
+      const selected = items.filter((item) => {
+        const key = `${cfg.key}-${item.issueId}`;
+        return selectedIds.size === 0 || selectedIds.has(key);
+      });
 
-      if (section.sectionTitle) {
-        rows.push([section.sectionTitle]);
+      if (cfg.isSectionStart) {
+        rows.push([cfg.sectionTitle]);
         rows.push([]);
       }
-      rows.push([section.teamTitle]);
-      rows.push(["No", "クライアント名", "チケットID", "タイトル", "課題", "ステータス", "開始日", "終了日"]);
+      rows.push([cfg.teamTitle]);
+      rows.push([...COLUMN_HEADERS]);
 
-      for (const item of items) {
+      const exportItems = selected.length > 0 ? selected : [null];
+      for (const item of exportItems) {
         rowNum++;
-        rows.push([
-          rowNum,
-          item.projectName || "-",
-          item.issueKey,
-          item.subject,
-          "",
-          item.status,
-          item.startDate ? formatExportDate(item.startDate) : "-",
-          item.dueDate ? formatExportDate(item.dueDate) : "-",
-        ]);
+        if (!item) {
+          rows.push([rowNum, "", "", "", "", "", "", ""]);
+        } else {
+          rows.push([
+            rowNum,
+            item.projectName || "",
+            { text: item.issueId, hyperlink: getIssueUrl(item.issueId) },
+            item.subject || "",
+            "",
+            item.status || "",
+            formatExcelDate(item.startDate),
+            formatExcelDate(item.dueDate),
+          ]);
+        }
       }
       rows.push([]);
     }
@@ -100,27 +170,11 @@ export function WeeklyReportPanel() {
       { wch: 12 },
     ];
 
-    let r = 2;
-    for (const section of sectionHeaders) {
-      const items = data.sections.find((s) => s.key === section.key)?.items ?? [];
-      if (items.length === 0) continue;
-      if (section.sectionTitle) r += 2;
-      r += 2;
-      for (const item of items) {
-        const cellRef = XLSX.utils.encode_cell({ r, c: 2 });
-        if (ws[cellRef]) {
-          ws[cellRef].l = { Target: getIssueUrl(item.issueId) };
-        }
-        r++;
-      }
-      r++;
-    }
-
     XLSX.utils.book_append_sheet(wb, ws, "Report");
 
-    const monthDayRange = `${String(rangeFrom.getMonth() + 1).padStart(2, "0")}.${String(rangeFrom.getDate()).padStart(2, "0")}~${String(rangeTo.getMonth() + 1).padStart(2, "0")}.${String(rangeTo.getDate()).padStart(2, "0")}`;
+    const monthDayRange = `${pad2(rangeFrom.getMonth() + 1)}.${pad2(rangeFrom.getDate())}~${pad2(rangeTo.getMonth() + 1)}.${pad2(rangeTo.getDate())}`;
     XLSX.writeFile(wb, `WDM_Weekly_Report_${monthDayRange}.xlsx`);
-  }, [data]);
+  }, [data, sectionConfigs, sectionMap, selectedIds]);
 
   return (
     <section className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur">
@@ -166,48 +220,105 @@ export function WeeklyReportPanel() {
             </div>
           </div>
 
-          <div className="space-y-6">
-            {filteredSections.map((section) => (
-              <div key={section.key} className="overflow-hidden rounded-2xl border border-white/10">
-                <div className="border-b border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-slate-200">
-                  {section.title}
-                </div>
-                <div className="hidden grid-cols-[0.9fr_1fr_2fr_0.9fr_0.7fr] gap-4 border-b border-white/10 bg-black/20 px-4 py-3 text-xs uppercase tracking-[0.2em] text-slate-400 md:grid">
-                  <span>{t("columns.issue")}</span>
-                  <span>Project</span>
-                  <span>{t("columns.subject")}</span>
-                  <span>{t("columns.status")}</span>
-                  <span>{t("columns.hours")}</span>
-                </div>
-                <div className="divide-y divide-white/10">
-                  {section.items.length === 0 && (
-                    <div className="px-4 py-3 text-sm text-slate-400">No issues.</div>
-                  )}
-                  {section.items.map((item) => (
-                    <div key={`${section.key}-${item.issueId}`} className="grid gap-2 px-4 py-3 text-sm transition hover:bg-white/[0.04] md:grid-cols-[0.9fr_1fr_2fr_0.9fr_0.7fr] md:items-center">
-                      <div>
-                        <a
-                          href={getIssueUrl(item.issueId)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sky-300 hover:text-sky-200 hover:underline"
+          {/* Report table */}
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <table className="report-table w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10 bg-black/30">
+                  <th className="px-3 py-3 text-center text-xs uppercase tracking-[0.2em] text-slate-400">
+                    <label className="report-selection-control cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleAll}
+                      />
+                      <span>No</span>
+                    </label>
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">クライアント名</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">チケットID</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">タイトル</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">課題</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">ステータス</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">開始日</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">終了日</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sectionConfigs.map((cfg) => {
+                  const section = sectionMap.get(cfg.key);
+                  const items = section?.items ?? [];
+
+                  const rows: React.ReactNode[] = [];
+
+                  if (cfg.isSectionStart) {
+                    rows.push(
+                      <tr key={`${cfg.key}-section`} className="report-section-row">
+                        <td colSpan={8}>{cfg.sectionTitle}</td>
+                      </tr>,
+                    );
+                  }
+
+                  rows.push(
+                    <tr key={`${cfg.key}-team`} className="report-team-row">
+                      <td colSpan={8}>{cfg.teamTitle}</td>
+                    </tr>,
+                  );
+
+                  if (items.length === 0) {
+                    rows.push(
+                      <tr key={`${cfg.key}-empty`}>
+                        <td colSpan={8} className="px-4 py-3 text-slate-400">No issues.</td>
+                      </tr>,
+                    );
+                  } else {
+                    items.forEach((item, index) => {
+                      const rowKey = `${cfg.key}-${item.issueId}`;
+                      const selected = isRowSelected(rowKey);
+                      rows.push(
+                        <tr
+                          key={rowKey}
+                          className={!selected ? "report-row-excluded" : ""}
                         >
-                          {item.issueKey}
-                        </a>
-                      </div>
-                      <div className="text-slate-300"><SearchHighlight text={item.projectName || "-"} term={searchTerm} /></div>
-                      <div className="text-white"><SearchHighlight text={item.subject} term={searchTerm} /></div>
-                      <div>
-                        <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-                          <SearchHighlight text={item.status} term={searchTerm} />
-                        </span>
-                      </div>
-                      <div className="text-slate-300 tabular-nums">{item.reportSpentHours}h</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+                          <td className="text-center">
+                            <label className="report-selection-control cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.size === 0 || selectedIds.has(rowKey)}
+                                onChange={() => toggleRow(rowKey)}
+                              />
+                              <span>{index + 1}</span>
+                            </label>
+                          </td>
+                          <td><SearchHighlight text={item.projectName || ""} term={searchTerm} /></td>
+                          <td>
+                            <a
+                              href={getIssueUrl(item.issueId)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="issue-link text-sky-300 hover:text-sky-200 hover:underline"
+                            >
+                              <SearchHighlight text={item.issueKey} term={searchTerm} />
+                            </a>
+                          </td>
+                          <td><SearchHighlight text={item.subject || ""} term={searchTerm} /></td>
+                          <td></td>
+                          <td>
+                            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
+                              <SearchHighlight text={item.status || "-"} term={searchTerm} />
+                            </span>
+                          </td>
+                          <td>{formatExcelDate(item.startDate) || "-"}</td>
+                          <td>{formatExcelDate(item.dueDate) || "-"}</td>
+                        </tr>,
+                      );
+                    });
+                  }
+
+                  return rows;
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
