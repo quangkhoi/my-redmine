@@ -22,14 +22,14 @@ export function LogTimePanel({ reportDate: initialReportDate, userName: initialU
   const t = useTranslations("logTime");
 
   const now = new Date();
-  const [selectedUser, setSelectedUser] = useState("ALL");
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
   const reportDate = buildReportDate(year, month);
   const userName = initialUserName;
 
-  const { data, state } = useLogTime(reportDate, userName);
+  const [selectedUser, setSelectedUser] = useState(userName);
+  const { data, state } = useLogTime(reportDate, selectedUser);
   const { searchTerm } = useSearch();
 
   const filteredItems = useMemo(() => {

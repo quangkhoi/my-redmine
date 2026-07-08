@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getLogTime } from "@/services/log-time/getLogTime";
-import type { LogTimeViewModel } from "@/types/api/log-time";
+import { ASSIGNEES } from "@/config/team";
+import type { LogTimeViewModel, LogTimeItem } from "@/types/api/log-time";
 
 type State =
   | { kind: "loading" }
@@ -17,7 +18,30 @@ export function useLogTime(reportDate: string, userName: string) {
   useEffect(() => {
     let active = true;
 
-    getLogTime(reportDate, userName).then((result) => {
+    async function fetchAll() {
+      const users = ASSIGNEES.map(a => a.login);
+      const results = await Promise.all(users.map(u => getLogTime(reportDate, u)));
+      if (!active) return;
+
+      const allItems: LogTimeItem[] = [];
+      for (const result of results) {
+        if (result.kind === "ok") {
+          allItems.push(...result.data.items);
+        }
+      }
+
+      if (allItems.length === 0) {
+        setData(null);
+        setState({ kind: "empty" });
+        return;
+      }
+
+      setData({ userName: "ALL", displayName: "All Users", reportDate, items: allItems });
+      setState({ kind: "ready" });
+    }
+
+    async function fetchOne() {
+      const result = await getLogTime(reportDate, userName);
       if (!active) return;
       if (result.kind === "ok") {
         setData(result.data);
@@ -26,7 +50,13 @@ export function useLogTime(reportDate: string, userName: string) {
       }
       setData(null);
       setState({ kind: "error", message: result.message });
-    });
+    }
+
+    if (userName === "ALL") {
+      fetchAll();
+    } else {
+      fetchOne();
+    }
 
     return () => {
       active = false;
