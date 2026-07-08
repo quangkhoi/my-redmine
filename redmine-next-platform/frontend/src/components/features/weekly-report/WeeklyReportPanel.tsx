@@ -179,55 +179,55 @@ export function WeeklyReportPanel() {
   }, [data, sectionConfigs, sectionMap, selectedIds]);
 
   return (
-    <section className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/30 backdrop-blur">
-      <p className="text-sm uppercase tracking-[0.3em] text-violet-300">{t("eyebrow")}</p>
+    <section className="w-full rounded-3xl border border-border bg-secondary p-8 shadow-2xl shadow-black/30 backdrop-blur">
+      <p className="text-sm uppercase tracking-[0.3em] text-violet-600 dark:text-violet-300">{t("eyebrow")}</p>
       <h2 className="mt-4 text-3xl font-semibold">{t("title")}</h2>
-      <p className="mt-2 max-w-2xl text-sm text-slate-300">{t("description")}</p>
+      <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("description")}</p>
 
       {/* Controls */}
-      <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Week Start (Monday)</label>
+          <label className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Week Start (Monday)</label>
           <input
             type="date"
             value={weekStart}
             onChange={(e) => setWeekStart(e.target.value)}
-            className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-sky-400/60"
+            className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-foreground outline-none focus:border-sky-400/60"
           />
         </div>
         <button
           onClick={handleExport}
           disabled={state.kind !== "ready"}
-          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:border-white/20 hover:bg-white/10 disabled:opacity-50"
+          className="rounded-xl border border-border bg-secondary px-4 py-2 text-sm text-card-foreground transition hover:border-white/20 hover:bg-secondary/80 disabled:opacity-50"
         >
           Export Excel
         </button>
       </div>
 
       {/* States */}
-      {state.kind === "loading" && <p className="mt-4 text-slate-300">{t("loading")}</p>}
+      {state.kind === "loading" && <p className="mt-4 text-muted-foreground">{t("loading")}</p>}
       {state.kind === "error" && <p className="mt-4 text-rose-300">{state.message}</p>}
-      {state.kind === "empty" && <p className="mt-4 text-slate-300">{t("empty")}</p>}
+      {state.kind === "empty" && <p className="mt-4 text-muted-foreground">{t("empty")}</p>}
 
       {state.kind === "ready" && data && (
         <div className="mt-6 space-y-5">
           <div className="flex flex-wrap gap-6">
             <div>
-              <p className="text-sm text-slate-400">Range</p>
+              <p className="text-sm text-muted-foreground">Range</p>
               <p className="text-lg font-medium">{data.range.from} - {data.range.to}</p>
             </div>
             <div>
-              <p className="text-sm text-slate-400">{t("userName")}</p>
+              <p className="text-sm text-muted-foreground">{t("userName")}</p>
               <p className="text-lg font-medium">{data.userName}</p>
             </div>
           </div>
 
           {/* Report table */}
-          <div className="overflow-x-auto rounded-2xl border border-white/10">
+          <div className="overflow-x-auto rounded-2xl border border-border">
             <table className="report-table w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10 bg-black/30">
-                  <th className="px-3 py-3 text-center text-xs uppercase tracking-[0.2em] text-slate-400">
+                <tr className="border-b border-border bg-secondary">
+                  <th className="px-3 py-3 text-center text-xs uppercase tracking-[0.2em] text-muted-foreground">
                     <label className="report-selection-control cursor-pointer">
                       <input
                         type="checkbox"
@@ -237,13 +237,13 @@ export function WeeklyReportPanel() {
                       <span>No</span>
                     </label>
                   </th>
-                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">クライアント名</th>
-                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">チケットID</th>
-                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">タイトル</th>
-                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">課題</th>
-                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">ステータス</th>
-                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">開始日</th>
-                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-slate-400">終了日</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-muted-foreground">クライアント名</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-muted-foreground">チケットID</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-muted-foreground">タイトル</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-muted-foreground">課題</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-muted-foreground">ステータス</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-muted-foreground">開始日</th>
+                  <th className="px-3 py-3 text-left text-xs uppercase tracking-[0.2em] text-muted-foreground">終了日</th>
                 </tr>
               </thead>
               <tbody>
@@ -270,7 +270,7 @@ export function WeeklyReportPanel() {
                   if (items.length === 0) {
                     rows.push(
                       <tr key={`${cfg.key}-empty`}>
-                        <td colSpan={8} className="px-4 py-3 text-slate-400">No issues.</td>
+                        <td colSpan={8} className="px-4 py-3 text-muted-foreground">No issues.</td>
                       </tr>,
                     );
                   } else {
@@ -306,7 +306,7 @@ export function WeeklyReportPanel() {
                           <td><SearchHighlight text={item.subject || ""} term={searchTerm} /></td>
                           <td></td>
                           <td>
-                            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
+                            <span className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 text-xs text-card-foreground">
                               <SearchHighlight text={item.status || "-"} term={searchTerm} />
                             </span>
                           </td>
