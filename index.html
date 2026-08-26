@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Redmine Dashboard</title>
     <meta http-equiv="Cache-Control" content="no-store" />
-    <link rel="stylesheet" href="./styles.css?v=20260611-2" />
+    <link rel="stylesheet" href="./styles.css?v=20260826-3" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260609-6" />
   </head>
   <body>
@@ -387,6 +387,7 @@
               </div>
               <div class="list-actions">
                 <span id="loginTimeInfo">0 issue</span>
+                <button class="list-action-button" id="addLoginTime" type="button" disabled title="Select a ticket first">Add log time</button>
                 <label class="checkbox-control log-time-hide-control">
                   <input id="toggleLoggedTimeTickets" type="checkbox" />
                   <span>Hide tickets that</span>
@@ -395,6 +396,7 @@
                 </label>
               </div>
             </div>
+            <p class="log-time-action-message" id="logTimeActionMessage" role="alert" hidden></p>
             <div class="table-wrap">
               <table>
                 <thead>
@@ -407,15 +409,55 @@
                     <th>Status</th>
                     <th>Start date</th>
                     <th>Due date</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="loginTimeRows">
-                  <tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>
+                  <tr><td colspan="9" class="empty-cell">No matching issues.</td></tr>
                 </tbody>
               </table>
             </div>
           </section>
         </section>
+
+        <dialog class="log-time-dialog" id="logTimeDialog" aria-labelledby="logTimeDialogTitle">
+          <form id="logTimeForm" method="dialog">
+            <div class="log-time-dialog-heading">
+              <div>
+                <p class="eyebrow" id="logTimeDialogMode">New entry</p>
+                <h2 id="logTimeDialogTitle">Log time</h2>
+                <p class="log-time-dialog-issue" id="logTimeDialogIssue"></p>
+                <p class="log-time-dialog-hint">You can log time for this selected ticket even when another user is the assignee.</p>
+              </div>
+              <button class="log-time-dialog-close" id="closeLogTimeDialog" type="button" aria-label="Close">&times;</button>
+            </div>
+            <p class="form-message" id="logTimeFormMessage" role="alert" hidden></p>
+            <div class="log-time-form-fields">
+              <label>
+                <span>Date</span>
+                <input id="logTimeSpentOn" name="spent_on" type="date" required />
+              </label>
+              <label>
+                <span>Hours</span>
+                <input id="logTimeHours" name="hours" type="number" min="0.01" step="0.01" inputmode="decimal" required />
+              </label>
+              <label class="log-time-form-wide">
+                <span>Activity</span>
+                <select id="logTimeActivityId" name="activity_id" required>
+                  <option value="">Select activity</option>
+                </select>
+              </label>
+              <label class="log-time-form-wide">
+                <span>Comments</span>
+                <textarea id="logTimeComments" name="comments" rows="4"></textarea>
+              </label>
+            </div>
+            <div class="log-time-dialog-actions">
+              <button class="secondary-button" id="cancelLogTime" type="button">Cancel</button>
+              <button class="primary-button" id="saveLogTime" type="submit">Save</button>
+            </div>
+          </form>
+        </dialog>
 
         <section class="view" id="schemaConfigView" aria-label="Schema Config">
           <header class="page-header">
@@ -445,7 +487,7 @@
     </main>
 
     <script src="./vendor/xlsx.full.min.js?v=20260609-3"></script>
-    <script src="./app.js?v=20260611-13"></script>
+    <script src="./app.js?v=20260826-3"></script>
     <script src="./schema-config.js?v=20260625-1"></script>
     <script src="./polling.js?v=20260625-1"></script>
   </body>

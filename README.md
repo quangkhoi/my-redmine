@@ -8,6 +8,8 @@ Trang web tĩnh để lấy issue từ Redmine REST API và hiển thị theo c�
 - My Task
 - Login time
 
+Trong màn hình `Log time`, chọn một ticket rồi dùng `Add log time` để tạo entry, kể cả khi ticket được giao cho user khác. Có thể sửa entry của user đang chọn trong bộ lọc logtime.
+
 ## Cách chạy
 
 Repo này có thể public trên GitHub Pages. Không commit API key hoặc Basic Auth username/password.
@@ -19,6 +21,8 @@ C:\workspace\my-redmine\index.html
 ```
 
 App dùng Cloudflare Worker HTTPS proxy mặc định được định nghĩa trong `app.js`. API key và Basic Auth được lưu bằng Cloudflare Worker secrets, không nhập trên UI.
+
+API key cần có quyền tạo và sửa Time entries; activity được lấy từ Redmine khi mở form logtime.
 
 Không cần cài server local hoặc build tool cho phần web UI.
 

@@ -3,6 +3,7 @@ const ALLOWED_PATHS = new Set([
   "/users.json",
   "/issue_statuses.json",
   "/time_entries.json",
+  "/enumerations/time_entry_activities.json",
   "/custom_fields.json",
 ]);
 
@@ -20,11 +21,11 @@ export default {
       });
     }
 
-    if (request.method !== "GET") {
+    if (!isAllowedMethod(request.method)) {
       return textResponse("Method not allowed", 405, cors);
     }
 
-    if (!ALLOWED_PATHS.has(requestUrl.pathname)) {
+    if (!isAllowedRequest(request.method, requestUrl.pathname)) {
       return textResponse("Not found", 404, cors);
     }
 
@@ -37,12 +38,18 @@ export default {
       const targetUrl = new URL(`${normalizeBaseUrl(env.REDMINE_BASE_URL)}${requestUrl.pathname}`);
       targetUrl.search = requestUrl.search;
 
-      const redmineResponse = await fetch(targetUrl.toString(), {
+      const fetchOptions = {
         headers: {
           Authorization: `Basic ${btoa(`${env.BASIC_USER}:${env.BASIC_PASS}`)}`,
           "X-Redmine-API-Key": env.REDMINE_API_KEY,
         },
-      });
+      };
+      if (request.method !== "GET") {
+        fetchOptions.method = request.method;
+        fetchOptions.headers["Content-Type"] = request.headers.get("Content-Type") || "application/json";
+        fetchOptions.body = request.body;
+      }
+      const redmineResponse = await fetch(targetUrl.toString(), fetchOptions);
 
       const headers = new Headers(redmineResponse.headers);
       applyCorsHeaders(headers, cors);
@@ -78,11 +85,25 @@ function buildCorsHeaders(request, env) {
 
   return {
     "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Redmine-API-Key",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
+}
+
+function isAllowedMethod(method) {
+  return ["GET", "POST", "PUT"].includes(method);
+}
+
+function isAllowedRequest(method, pathname) {
+  if (method === "GET") {
+    return ALLOWED_PATHS.has(pathname);
+  }
+  if (method === "POST") {
+    return pathname === "/time_entries.json";
+  }
+  return method === "PUT" && /^\/time_entries\/\d+\.json$/.test(pathname);
 }
 
 function applyCorsHeaders(headers, cors) {

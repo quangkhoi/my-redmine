@@ -52,7 +52,10 @@ Only these Redmine API paths are proxied:
 - `/users.json`
 - `/issue_statuses.json`
 - `/time_entries.json`
+- `/enumerations/time_entry_activities.json`
 - `/custom_fields.json`
+
+`GET` is supported for every endpoint above. The Worker also permits `POST /time_entries.json` to create logtime and `PUT /time_entries/:id.json` to update it.
 
 ## CORS
 

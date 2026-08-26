@@ -739,6 +739,152 @@ tbody tr:hover {
   background: #f8fbfa;
 }
 
+.login-time-issue-row {
+  cursor: pointer;
+}
+
+.login-time-issue-row.is-selected,
+.login-time-issue-row.is-selected:hover {
+  background: #e8f4f1;
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+.time-entry-detail-row {
+  background: #fbfcfc;
+}
+
+.time-entry-detail-row td {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.time-entry-action-cell {
+  text-align: right;
+}
+
+.time-entry-edit-button {
+  min-height: 28px;
+  padding: 0 8px;
+}
+
+.log-time-action-message {
+  border-bottom: 1px solid #fecaca;
+  background: #fef2f2;
+  color: var(--danger);
+  font-size: 13px;
+  margin: 0;
+  padding: 10px 18px;
+}
+
+.log-time-dialog {
+  width: min(560px, calc(100vw - 32px));
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 24px 64px rgba(24, 44, 40, 0.25);
+  color: var(--text);
+  padding: 0;
+}
+
+.log-time-dialog::backdrop {
+  background: rgba(23, 33, 31, 0.42);
+}
+
+.log-time-dialog form {
+  padding: 22px;
+}
+
+.log-time-dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.log-time-dialog-issue {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 5px;
+}
+
+.log-time-dialog-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 7px;
+}
+
+.log-time-dialog-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.log-time-form-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.log-time-form-fields label {
+  display: grid;
+  gap: 6px;
+}
+
+.log-time-form-fields span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.log-time-form-fields input,
+.log-time-form-fields select,
+.log-time-form-fields textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  padding: 8px 10px;
+}
+
+.log-time-form-fields input,
+.log-time-form-fields select {
+  height: 38px;
+}
+
+.log-time-form-fields textarea {
+  resize: vertical;
+}
+
+.log-time-form-wide {
+  grid-column: 1 / -1;
+}
+
+.form-message {
+  border-radius: 7px;
+  background: #fef2f2;
+  color: var(--danger);
+  font-size: 13px;
+  margin: 16px 0 0;
+  padding: 9px 10px;
+}
+
+.log-time-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
 .report-section-row td {
   background: #ffffff;
   border-bottom: 0;
@@ -975,6 +1121,14 @@ tbody tr:hover {
   .list-actions {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .log-time-form-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .log-time-form-wide {
+    grid-column: auto;
   }
 
 }

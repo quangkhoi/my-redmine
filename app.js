@@ -112,6 +112,21 @@ const els = {
   loginLoggedUserId: document.querySelector("#loginLoggedUserId"),
   toggleLoggedTimeTickets: document.querySelector("#toggleLoggedTimeTickets"),
   loginTimeRows: document.querySelector("#loginTimeRows"),
+  addLoginTime: document.querySelector("#addLoginTime"),
+  logTimeActionMessage: document.querySelector("#logTimeActionMessage"),
+  logTimeDialog: document.querySelector("#logTimeDialog"),
+  logTimeForm: document.querySelector("#logTimeForm"),
+  logTimeDialogMode: document.querySelector("#logTimeDialogMode"),
+  logTimeDialogTitle: document.querySelector("#logTimeDialogTitle"),
+  logTimeDialogIssue: document.querySelector("#logTimeDialogIssue"),
+  logTimeFormMessage: document.querySelector("#logTimeFormMessage"),
+  logTimeSpentOn: document.querySelector("#logTimeSpentOn"),
+  logTimeHours: document.querySelector("#logTimeHours"),
+  logTimeActivityId: document.querySelector("#logTimeActivityId"),
+  logTimeComments: document.querySelector("#logTimeComments"),
+  closeLogTimeDialog: document.querySelector("#closeLogTimeDialog"),
+  cancelLogTime: document.querySelector("#cancelLogTime"),
+  saveLogTime: document.querySelector("#saveLogTime"),
   notStartedStartCondition: document.querySelector("#notStartedStartCondition"),
   notStartedDueCondition: document.querySelector("#notStartedDueCondition"),
   processingCount: document.querySelector("#processingCount"),
@@ -147,6 +162,9 @@ let loadedDailyReportIssues = [];
 let loadedMyTaskIssues = [];
 let loadedLoginTimeIssues = [];
 let releaseTargetValueNames = new Map();
+let selectedLoginTimeIssueId = null;
+let logTimeActivities = null;
+let logTimeModalState = { mode: "create", issueId: null, entryId: null };
 
 function init() {
   renderDashboardControls();
@@ -182,6 +200,11 @@ function bindEvents() {
   els.loadReport.addEventListener("click", loadReport);
   els.exportReport.addEventListener("click", exportReport);
   els.loadLoginTime.addEventListener("click", loadLoginTime);
+  els.addLoginTime.addEventListener("click", openCreateLogTime);
+  els.loginTimeRows.addEventListener("click", handleLoginTimeRowsClick);
+  els.logTimeForm.addEventListener("submit", saveLogTime);
+  els.closeLogTimeDialog.addEventListener("click", closeLogTimeDialog);
+  els.cancelLogTime.addEventListener("click", closeLogTimeDialog);
   els.toggleLoggedTimeTickets.addEventListener("change", toggleLoggedTimeTickets);
   els.hideNotStartedNonDevelopment.addEventListener("change", toggleNotStartedNonDevelopment);
   els.hideProcessedResearch.addEventListener("change", toggleProcessedResearch);
@@ -192,7 +215,7 @@ function bindEvents() {
   els.reportFromDate.addEventListener("change", renderReportConditions);
   els.reportToDate.addEventListener("change", renderReportConditions);
   els.loginUserId.addEventListener("change", handleLoginUserChange);
-  els.loginLoggedUserId.addEventListener("change", applyLogTimeLoggedUserFilter);
+  els.loginLoggedUserId.addEventListener("change", handleLoginLoggedUserChange);
   els.loginYear.addEventListener("change", renderLoginTimeConditions);
   els.loginMonth.addEventListener("change", renderLoginTimeConditions);
   els.reportRows.addEventListener("change", handleReportSelectionChange);
@@ -236,6 +259,11 @@ function expandSidebar() {
 function toggleLoggedTimeTickets() {
   hideLoggedTimeTickets = els.toggleLoggedTimeTickets.checked;
   applyLogTimeLoggedUserFilter();
+  syncAddLoginTimeButton();
+}
+
+function handleLoginLoggedUserChange() {
+  renderLoginTimeList(loadedLoginTimeIssues);
 }
 
 function handleLoginUserChange() {
@@ -400,7 +428,7 @@ function renderReportLoading() {
 }
 
 function renderLoginTimeLoading() {
-  els.loginTimeRows.innerHTML = '<tr><td colspan="8" class="empty-cell">Loading data...</td></tr>';
+  els.loginTimeRows.innerHTML = '<tr><td colspan="9" class="empty-cell">Loading data...</td></tr>';
 }
 
 async function loadDashboard() {
@@ -582,11 +610,16 @@ function exportReport() {
   setStatus("Exported report Excel file.", "ok");
 }
 
-async function loadLoginTime() {
+async function loadLoginTime({ preserveSelection = false } = {}) {
   switchView("login-time");
   setStatus("Loading log time data...");
   beginGlobalLoading();
   els.loadLoginTime.disabled = true;
+  const previousSelectedIssueId = preserveSelection ? selectedLoginTimeIssueId : null;
+  const previousHideLoggedTimeTickets = preserveSelection ? hideLoggedTimeTickets : false;
+  if (!preserveSelection) {
+    selectedLoginTimeIssueId = null;
+  }
   renderLoginTimeLoading();
 
   try {
@@ -594,8 +627,11 @@ async function loadLoginTime() {
 
     renderLoginTimeConditions();
     loadedLoginTimeIssues = await fetchLoginTimeIssues();
-    hideLoggedTimeTickets = false;
-    els.toggleLoggedTimeTickets.checked = false;
+    selectedLoginTimeIssueId = loadedLoginTimeIssues.some((issue) => Number(issue.id) === Number(previousSelectedIssueId))
+      ? Number(previousSelectedIssueId)
+      : null;
+    hideLoggedTimeTickets = previousHideLoggedTimeTickets;
+    els.toggleLoggedTimeTickets.checked = hideLoggedTimeTickets;
     renderLoginTimeList(loadedLoginTimeIssues);
     markLoadButtonAsReload(els.loadLoginTime);
     setStatus(`Loaded ${loadedLoginTimeIssues.length} log time issues from Redmine.`, "ok");
@@ -607,6 +643,141 @@ async function loadLoginTime() {
     els.loadLoginTime.disabled = false;
     endGlobalLoading();
   }
+}
+
+async function openCreateLogTime() {
+  const issue = getSelectedLoginTimeIssue();
+  if (!issue) {
+    return;
+  }
+
+  await openLogTimeDialog({ mode: "create", issue });
+}
+
+async function handleLoginTimeRowsClick(event) {
+  const editButton = event.target.closest(".time-entry-edit-button");
+  if (editButton) {
+    const issue = findLoginTimeIssue(editButton.dataset.issueId);
+    const entry = findLoginTimeEntry(issue, editButton.dataset.entryId);
+    if (issue && entry && canEditLoginTimeEntry(entry)) {
+      await openLogTimeDialog({ mode: "edit", issue, entry });
+    }
+    return;
+  }
+
+  if (event.target.closest("a, button, input, select, textarea")) {
+    return;
+  }
+
+  const row = event.target.closest(".login-time-issue-row");
+  if (!row) {
+    return;
+  }
+
+  selectedLoginTimeIssueId = Number(row.dataset.issueId);
+  setLogTimeActionMessage("");
+  renderLoginTimeList(loadedLoginTimeIssues);
+}
+
+async function openLogTimeDialog({ mode, issue, entry = null }) {
+  try {
+    requireRuntimeConfig();
+    const activities = await fetchLogTimeActivities();
+    logTimeModalState = { mode, issueId: Number(issue.id), entryId: entry ? Number(entry.id) : null };
+    els.logTimeForm.reset();
+    els.logTimeDialogMode.textContent = mode === "edit" ? "Edit entry" : "New entry";
+    els.logTimeDialogTitle.textContent = mode === "edit" ? "Edit log time" : "Add log time";
+    els.logTimeDialogIssue.textContent = `#${issue.id} ${issue.subject || ""}`;
+    renderLogTimeActivityOptions(activities, entry && entry.activity ? entry.activity.id : "");
+    els.logTimeSpentOn.value = entry ? entry.spent_on : getDefaultLogTimeDate();
+    els.logTimeHours.value = entry ? String(entry.hours || "") : "";
+    els.logTimeComments.value = entry ? entry.comments || "" : "";
+    setLogTimeFormMessage("");
+    els.logTimeDialog.showModal();
+    els.logTimeSpentOn.focus();
+  } catch (error) {
+    const message = `Could not open log time form: ${error.message}`;
+    setLogTimeActionMessage(message);
+    setStatus(message, "error");
+  }
+}
+
+function closeLogTimeDialog() {
+  if (els.logTimeDialog.open) {
+    els.logTimeDialog.close();
+  }
+  setLogTimeFormMessage("");
+}
+
+async function saveLogTime(event) {
+  event.preventDefault();
+  const payload = getLogTimeFormPayload();
+  if (payload.error) {
+    setLogTimeFormMessage(payload.error);
+    return;
+  }
+
+  const isEdit = logTimeModalState.mode === "edit";
+  setLogTimeFormMessage("");
+  setLogTimeFormSaving(true);
+
+  try {
+    requireRuntimeConfig();
+    if (isEdit) {
+      await updateTimeEntry(logTimeModalState.entryId, payload.value);
+    } else {
+      await createTimeEntry(logTimeModalState.issueId, payload.value);
+    }
+    closeLogTimeDialog();
+    await loadLoginTime({ preserveSelection: true });
+    setStatus(isEdit ? "Updated log time entry." : "Added log time entry.", "ok");
+  } catch (error) {
+    setLogTimeFormMessage(error.message);
+    setStatus(`Could not save log time: ${error.message}`, "error");
+  } finally {
+    setLogTimeFormSaving(false);
+  }
+}
+
+function getLogTimeFormPayload() {
+  const spentOn = els.logTimeSpentOn.value;
+  const hours = Number(els.logTimeHours.value);
+  const activityId = Number(els.logTimeActivityId.value);
+
+  if (!isValidInputDate(spentOn)) {
+    return { error: "Enter a valid date." };
+  }
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return { error: "Hours must be greater than 0." };
+  }
+  if (!Number.isInteger(activityId) || activityId <= 0) {
+    return { error: "Select an activity." };
+  }
+
+  return {
+    value: {
+      spent_on: spentOn,
+      hours,
+      activity_id: activityId,
+      comments: els.logTimeComments.value.trim(),
+    },
+  };
+}
+
+function setLogTimeFormSaving(isSaving) {
+  els.saveLogTime.disabled = isSaving;
+  els.cancelLogTime.disabled = isSaving;
+  els.closeLogTimeDialog.disabled = isSaving;
+  els.logTimeSpentOn.disabled = isSaving;
+  els.logTimeHours.disabled = isSaving;
+  els.logTimeActivityId.disabled = isSaving;
+  els.logTimeComments.disabled = isSaving;
+  els.saveLogTime.textContent = isSaving ? "Saving..." : "Save";
+}
+
+function setLogTimeFormMessage(message) {
+  els.logTimeFormMessage.textContent = message;
+  els.logTimeFormMessage.hidden = !message;
 }
 
 async function fetchReportLists() {
@@ -1127,6 +1298,61 @@ async function redmineGet(url) {
   throw buildHttpError(response, url);
 }
 
+async function redmineWrite(url, method, body) {
+  const response = await safeFetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (response.ok) {
+    return null;
+  }
+
+  throw buildHttpError(response, url);
+}
+
+async function fetchLogTimeActivities() {
+  if (logTimeActivities) {
+    return logTimeActivities;
+  }
+
+  const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
+  const url = new URL(`${apiBaseUrl}/enumerations/time_entry_activities.json`);
+  const data = await redmineGet(url);
+  const activities = Array.isArray(data.time_entry_activities) ? data.time_entry_activities : [];
+  logTimeActivities = activities.filter((activity) => activity && activity.active !== false);
+
+  if (!logTimeActivities.length) {
+    throw new Error("No active time entry activities were returned by Redmine.");
+  }
+
+  return logTimeActivities;
+}
+
+function renderLogTimeActivityOptions(activities, selectedActivityId) {
+  const selectedId = Number(selectedActivityId);
+  els.logTimeActivityId.innerHTML = [
+    '<option value="">Select activity</option>',
+    ...activities.map(
+      (activity) =>
+        `<option value="${escapeAttr(activity.id)}" ${Number(activity.id) === selectedId ? "selected" : ""}>${escapeHtml(activity.name || "-")}</option>`
+    ),
+  ].join("");
+}
+
+async function createTimeEntry(issueId, entry) {
+  const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
+  const url = new URL(`${apiBaseUrl}/time_entries.json`);
+  return redmineWrite(url, "POST", { time_entry: Object.assign({ issue_id: Number(issueId) }, entry) });
+}
+
+async function updateTimeEntry(entryId, entry) {
+  const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
+  const url = new URL(`${apiBaseUrl}/time_entries/${Number(entryId)}.json`);
+  return redmineWrite(url, "PUT", { time_entry: entry });
+}
+
 async function safeFetch(url, options) {
   const invalidRequestMessage = getInvalidRequestUrlMessage(url);
   if (invalidRequestMessage) {
@@ -1145,6 +1371,10 @@ function buildHttpError(response, url) {
     return new Error(
       `The API returned HTTP 401 at ${url.pathname}. Check the Cloudflare Worker secrets or Redmine authentication.`
     );
+  }
+
+  if (response.status === 403 && /^\/time_entries(?:\/\d+)?\.json$/.test(url.pathname)) {
+    return new Error("The Redmine API account does not have permission to log time for this ticket.");
   }
 
   if (response.status === 0) {
@@ -1819,13 +2049,15 @@ function renderLoginTimeList(issues) {
   els.loginTimeInfo.textContent = `${filteredIssues.length} issue`;
 
   if (!filteredIssues.length) {
-    els.loginTimeRows.innerHTML = '<tr><td colspan="8" class="empty-cell">No matching issues.</td></tr>';
+    els.loginTimeRows.innerHTML = '<tr><td colspan="9" class="empty-cell">No matching issues.</td></tr>';
     applyLogTimeLoggedUserFilter();
+    syncAddLoginTimeButton();
     return;
   }
 
   els.loginTimeRows.innerHTML = filteredIssues.map(loginTimeRow).join("");
   applyLogTimeLoggedUserFilter();
+  syncAddLoginTimeButton();
 }
 
 function applyLogTimeLoggedUserFilter() {
@@ -1840,6 +2072,39 @@ function applyLogTimeLoggedUserFilter() {
   }
 
   els.toggleLoggedTimeTickets.checked = hideLoggedTimeTickets;
+}
+
+function syncAddLoginTimeButton() {
+  const selectedRow = els.loginTimeRows.querySelector(
+    `.login-time-issue-row[data-issue-id="${selectedLoginTimeIssueId}"]`
+  );
+  const isDisabled = !selectedRow || selectedRow.hidden;
+  els.addLoginTime.disabled = isDisabled;
+  els.addLoginTime.title = isDisabled ? "Select a visible ticket first" : "Add log time for the selected ticket";
+}
+
+function setLogTimeActionMessage(message) {
+  els.logTimeActionMessage.textContent = message;
+  els.logTimeActionMessage.hidden = !message;
+}
+
+function getSelectedLoginTimeIssue() {
+  return findLoginTimeIssue(selectedLoginTimeIssueId);
+}
+
+function findLoginTimeIssue(issueId) {
+  return loadedLoginTimeIssues.find((issue) => Number(issue.id) === Number(issueId)) || null;
+}
+
+function findLoginTimeEntry(issue, entryId) {
+  if (!issue) {
+    return null;
+  }
+  return (issue.loginSpentEntries || []).find((entry) => Number(entry.id) === Number(entryId)) || null;
+}
+
+function canEditLoginTimeEntry(entry) {
+  return Number(entry && entry.user && entry.user.id) === Number(els.loginLoggedUserId.value);
 }
 
 function renderReport(lists, total) {
@@ -2112,9 +2377,10 @@ function myTaskRow(issue, index) {
 function loginTimeRow(issue, index) {
   const issueUrl = getIssueUrl(issue);
   const spentUserIds = (issue.spentUserIds || []).join(",");
+  const isSelected = Number(issue.id) === Number(selectedLoginTimeIssueId);
 
   return `
-    <tr data-spent-user-ids="${escapeAttr(spentUserIds)}">
+    <tr class="login-time-issue-row${isSelected ? " is-selected" : ""}" data-issue-id="${escapeAttr(issue.id)}" data-spent-user-ids="${escapeAttr(spentUserIds)}" aria-selected="${isSelected}">
       <td>${index + 1}</td>
       <td><a class="issue-link" href="${escapeAttr(issueUrl)}" target="_blank" rel="noreferrer">#${highlightSearchText(issue.id)}</a></td>
       <td>${highlightSearchText(formatHours(issue.loginSpentHours))}</td>
@@ -2123,20 +2389,25 @@ function loginTimeRow(issue, index) {
       <td><span class="tag">${highlightSearchText((issue.status && issue.status.name) || "-")}</span></td>
       <td>${highlightSearchText(formatDate(issue.start_date))}</td>
       <td><span class="${isOverdue(issue) ? "tag warn" : ""}">${highlightSearchText(formatDate(issue.due_date))}</span></td>
+      <td></td>
     </tr>
-    ${timeEntryDetails(issue.loginSpentEntries || [], spentUserIds)}
+    ${timeEntryDetails(issue.loginSpentEntries || [], spentUserIds, issue.id)}
   `;
 }
 
-function timeEntryDetails(entries, spentUserIds) {
+function timeEntryDetails(entries, spentUserIds, issueId) {
   if (!entries.length) {
     return "";
   }
 
-  return entries.map((entry) => timeEntryDetail(entry, spentUserIds)).join("");
+  return entries.map((entry) => timeEntryDetail(entry, spentUserIds, issueId)).join("");
 }
 
-function timeEntryDetail(entry, spentUserIds) {
+function timeEntryDetail(entry, spentUserIds, issueId) {
+  const editAction = canEditLoginTimeEntry(entry)
+    ? `<button class="list-action-button time-entry-edit-button" type="button" data-issue-id="${escapeAttr(issueId)}" data-entry-id="${escapeAttr(entry.id)}">Edit</button>`
+    : "";
+
   return `
     <tr class="time-entry-detail-row" data-spent-user-ids="${escapeAttr(spentUserIds)}">
       <td></td>
@@ -2147,6 +2418,7 @@ function timeEntryDetail(entry, spentUserIds) {
       <td></td>
       <td>${escapeHtml(formatDate(entry.spent_on))}</td>
       <td></td>
+      <td class="time-entry-action-cell">${editAction}</td>
     </tr>
   `;
 }
@@ -2183,7 +2455,7 @@ function renderDailyReportError(message) {
 }
 
 function renderLoginTimeError(message) {
-  els.loginTimeRows.innerHTML = `<tr><td colspan="8" class="empty-cell">${escapeHtml(message)}</td></tr>`;
+  els.loginTimeRows.innerHTML = `<tr><td colspan="9" class="empty-cell">${escapeHtml(message)}</td></tr>`;
 }
 
 function renderReportError(message) {
@@ -2267,6 +2539,24 @@ function formatApiDate(value) {
 
 function formatInputDate(value) {
   return formatApiDate(value);
+}
+
+function getDefaultLogTimeDate() {
+  const range = getSelectedLoginMonthRange();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (today >= range.monthStart && today <= range.monthEnd) {
+    return formatInputDate(today);
+  }
+  return formatInputDate(range.monthEnd);
+}
+
+function isValidInputDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+  const parsed = new Date(`${value}T00:00:00`);
+  return !Number.isNaN(parsed.getTime()) && formatInputDate(parsed) === value;
 }
 
 function formatHours(value) {
