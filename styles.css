@@ -672,6 +672,26 @@ h2 {
   text-decoration: underline;
 }
 
+.daily-report-dates {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.daily-report-remove {
+  padding: 2px 8px;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  background: #fff;
+  color: #b91c1c;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.daily-report-remove:hover {
+  background: #fef2f2;
+}
+
 .table-wrap {
   overflow-x: auto;
 }

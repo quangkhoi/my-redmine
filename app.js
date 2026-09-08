@@ -178,6 +178,13 @@ function bindEvents() {
   els.reloadProcessed.addEventListener("click", () => reloadDashboardList("processed"));
   els.loadDailyReport.addEventListener("click", loadDailyReport);
   els.copyDailyReport.addEventListener("click", copyDailyReport);
+  els.dailyReportContent.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-remove-daily-issue]");
+    if (!button) return;
+    const issueId = Number(button.dataset.removeDailyIssue);
+    loadedDailyReportIssues = loadedDailyReportIssues.filter((issue) => Number(issue.id) !== issueId);
+    renderDailyReport(loadedDailyReportIssues, true);
+  });
   els.loadMyTask.addEventListener("click", loadMyTask);
   els.loadReport.addEventListener("click", loadReport);
   els.exportReport.addEventListener("click", exportReport);
@@ -500,7 +507,7 @@ async function loadDailyReport() {
 }
 
 async function copyDailyReport() {
-  const html = `<div style="white-space: pre-wrap; font-family: sans-serif;">${els.dailyReportContent.innerHTML}</div>`;
+  const html = `<div style="white-space: pre-wrap; font-family: sans-serif;">${getDailyReportClipboardClone().innerHTML}</div>`;
   const text = buildDailyReportClipboardText();
 
   try {
@@ -859,10 +866,9 @@ async function fetchDailyReportIssues() {
   const today = startOfDay(new Date());
   const statusIds = await fetchStatusIds();
   const assigneeIds = DAILY_REPORT_ASSIGNEES.map((item) => item.id);
-  const [todayIssues, processingIssues, otherIssues] = await Promise.all([
+  const [notStartedIssues, processingIssues, otherIssues] = await Promise.all([
     fetchIssuesForAssigneeIds(assigneeIds, {
-      statusId: "*",
-      startDateFrom: today,
+      statusId: statusIds.notStarted,
       startDateTo: today,
     }),
     fetchIssuesForAssigneeIds(assigneeIds, {
@@ -874,9 +880,7 @@ async function fetchDailyReportIssues() {
     }),
   ]);
 
-  const filteredTodayIssues = todayIssues.filter(
-    (issue) => Number(issue.assigned_to && issue.assigned_to.id) !== DAILY_REPORT_OTHER.assigneeId
-  );
+  const filteredNotStartedIssues = notStartedIssues.filter((issue) => dateLte(issue.start_date, today));
   const filteredProcessingIssues = processingIssues.filter((issue) => Number(issue.done_ratio) <= 90);
   const filteredOtherIssues = otherIssues.filter(
     (issue) =>
@@ -886,7 +890,7 @@ async function fetchDailyReportIssues() {
       ["処理中", "未対応"].includes((issue.status && issue.status.name) || "")
   );
 
-  return sortIssues(uniqueIssues(filteredTodayIssues.concat(filteredProcessingIssues, filteredOtherIssues)));
+  return sortIssues(uniqueIssues(filteredNotStartedIssues.concat(filteredProcessingIssues, filteredOtherIssues)));
 }
 
 async function fetchMyTaskIssues() {
@@ -1749,12 +1753,7 @@ function buildDailyReportHtml(groupedIssues) {
     const issues = groupedIssues.get(assignee.id) || [];
 
     issues.forEach((issue, index) => {
-      const number = CIRCLED_NUMBERS[index] || `${index + 1}.`;
-      lines.push(
-        `${number}<a href="${escapeAttr(getIssueUrl(issue))}" target="_blank" rel="noreferrer">${escapeHtml(
-          issue.subject || "-"
-        )} - ${escapeHtml((issue.project && issue.project.name) || "-")}</a>`
-      );
+      lines.push(buildDailyReportIssueHtml(issue, index));
     });
 
     if (assigneeIndex < DAILY_REPORT_ASSIGNEES.length - 1) {
@@ -1766,24 +1765,33 @@ function buildDailyReportHtml(groupedIssues) {
   if (otherIssues.length) {
     lines.push("", "■その他");
     otherIssues.forEach((issue, index) => {
-      const number = CIRCLED_NUMBERS[index] || `${index + 1}.`;
-      lines.push(
-        `${number}<a href="${escapeAttr(getIssueUrl(issue))}" target="_blank" rel="noreferrer">${escapeHtml(
-          issue.subject || "-"
-        )} - ${escapeHtml((issue.project && issue.project.name) || "-")}</a>`
-      );
+      lines.push(buildDailyReportIssueHtml(issue, index));
     });
   }
 
   return lines.join("\n");
 }
 
-function buildDailyReportClipboardText() {
+function buildDailyReportIssueHtml(issue, index) {
+  const number = CIRCLED_NUMBERS[index] || `${index + 1}.`;
+  return `${number}<a href="${escapeAttr(getIssueUrl(issue))}" target="_blank" rel="noreferrer">${escapeHtml(
+    issue.subject || "-"
+  )} - ${escapeHtml((issue.project && issue.project.name) || "-")}</a><span class="daily-report-dates" data-copy-exclude> (Start date: ${escapeHtml(formatDate(issue.start_date))}, Due date: ${escapeHtml(formatDate(issue.due_date))})</span><span data-copy-exclude> <button type="button" class="daily-report-remove" data-remove-daily-issue="${escapeAttr(issue.id)}" aria-label="Xóa ticket #${escapeAttr(issue.id)} khỏi báo cáo" title="Xóa khỏi báo cáo; Reload để khôi phục">Xóa</button></span>`;
+}
+
+function getDailyReportClipboardClone() {
   const clone = els.dailyReportContent.cloneNode(true);
+  clone.removeAttribute("id");
+  clone.querySelectorAll("[data-copy-exclude]").forEach((element) => element.remove());
+  return clone;
+}
+
+function buildDailyReportClipboardText() {
+  const clone = getDailyReportClipboardClone();
   clone.querySelectorAll("a").forEach((link) => {
     link.textContent = `${link.textContent} ${link.href}`;
   });
-  return clone.innerText;
+  return clone.textContent;
 }
 
 function copyTextWithTextarea(text) {
@@ -1806,12 +1814,19 @@ function copyDailyReportSelection() {
     return false;
   }
 
-  selection.removeAllRanges();
-  range.selectNodeContents(els.dailyReportContent);
-  selection.addRange(range);
-  const copied = document.execCommand("copy");
-  selection.removeAllRanges();
-  return copied;
+  const clone = getDailyReportClipboardClone();
+  clone.style.position = "fixed";
+  clone.style.left = "-9999px";
+  document.body.appendChild(clone);
+  try {
+    selection.removeAllRanges();
+    range.selectNodeContents(clone);
+    selection.addRange(range);
+    return document.execCommand("copy");
+  } finally {
+    selection.removeAllRanges();
+    clone.remove();
+  }
 }
 
 function renderLoginTimeList(issues) {
