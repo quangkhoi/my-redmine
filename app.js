@@ -127,6 +127,7 @@ const els = {
   reloadNotStarted: document.querySelector("#reloadNotStarted"),
   reloadProcessed: document.querySelector("#reloadProcessed"),
   hideNotStartedNonDevelopment: document.querySelector("#hideNotStartedNonDevelopment"),
+  hideNotStartedPastStart: document.querySelector("#hideNotStartedPastStart"),
   hideProcessedResearch: document.querySelector("#hideProcessedResearch"),
   dailyReportInfo: document.querySelector("#dailyReportInfo"),
   dailyReportContent: document.querySelector("#dailyReportContent"),
@@ -141,6 +142,7 @@ let globalIssueSearchTerm = "";
 let globalLoadingCount = 0;
 let dashboardLists = { processing: [], notStarted: [], processed: [] };
 let hideNotStartedNonDevelopment = false;
+let hideNotStartedPastStart = false;
 let hideProcessedResearch = false;
 let loadedReportLists = null;
 let loadedDailyReportIssues = [];
@@ -191,6 +193,10 @@ function bindEvents() {
   els.loadLoginTime.addEventListener("click", loadLoginTime);
   els.toggleLoggedTimeTickets.addEventListener("change", toggleLoggedTimeTickets);
   els.hideNotStartedNonDevelopment.addEventListener("change", toggleNotStartedNonDevelopment);
+  els.hideNotStartedPastStart.addEventListener("change", () => {
+    hideNotStartedPastStart = els.hideNotStartedPastStart.checked;
+    renderDashboardList("notStarted");
+  });
   els.hideProcessedResearch.addEventListener("change", toggleProcessedResearch);
   els.dashboardStartDateFrom.addEventListener("change", renderListConditions);
   els.dashboardStartDateTo.addEventListener("change", renderListConditions);
@@ -833,7 +839,7 @@ async function fetchDashboardListIssues(name, statusIds, range) {
       startDateFrom: range.startDate,
       startDateTo: range.endDate,
     });
-    return sortNotStartedIssues(issues);
+    return sortIssues(issues);
   }
 
   if (name === "processed") {
@@ -1301,28 +1307,6 @@ function sortIssues(issues) {
   });
 }
 
-function sortNotStartedIssues(issues) {
-  return issues.slice().sort((a, b) => {
-    const trackerDiff = getNotStartedTrackerRank(a) - getNotStartedTrackerRank(b);
-    if (trackerDiff !== 0) return trackerDiff;
-
-    const trackerNameDiff = getTrackerName(a).localeCompare(getTrackerName(b), "ja");
-    if (trackerNameDiff !== 0) return trackerNameDiff;
-
-    const startDiff = compareDate(a.start_date, b.start_date);
-    if (startDiff !== 0) return startDiff;
-
-    const dueDiff = compareDate(a.due_date, b.due_date);
-    if (dueDiff !== 0) return dueDiff;
-
-    return Number(a.id || 0) - Number(b.id || 0);
-  });
-}
-
-function getNotStartedTrackerRank(issue) {
-  return getTrackerName(issue) === "開発" ? 0 : 1;
-}
-
 function getTrackerName(issue) {
   return ((issue.tracker && issue.tracker.name) || "").trim();
 }
@@ -1649,8 +1633,12 @@ function renderDashboardList(name) {
 
 function getVisibleDashboardIssues(name) {
   const issues = dashboardLists[name] || [];
-  if (name === "notStarted" && hideNotStartedNonDevelopment) {
-    return issues.filter((issue) => getTrackerName(issue) === TRACKER_NAMES.development);
+  if (name === "notStarted") {
+    const today = startOfDay(new Date());
+    return issues.filter((issue) =>
+      (!hideNotStartedNonDevelopment || getTrackerName(issue) === TRACKER_NAMES.development) &&
+      (!hideNotStartedPastStart || !issue.start_date || !(parseDateValue(issue.start_date) < today))
+    );
   }
   if (name === "processed" && hideProcessedResearch) {
     return issues.filter((issue) => getTrackerName(issue) !== TRACKER_NAMES.research);
