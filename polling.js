@@ -426,11 +426,12 @@ function updatedIssueRow(issue, index) {
       <td>${escapeHtml(issue.subject || "-")}</td>
       <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
       <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
+      <td>${escapeHtml(formatDate(issue.start_date))}</td>
+      <td>${escapeHtml(formatDate(issue.due_date))}</td>
       <td>
         ${done}%
         <div class="done-bar" aria-hidden="true"><span style="width: ${done}%"></span></div>
       </td>
-      <td>${escapeHtml(formatDate(issue.updated_on))}</td>
       <td><button class="dismiss-btn" title="Dismiss this">✕</button></td>
     </tr>
   `;
