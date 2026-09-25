@@ -938,13 +938,13 @@ async function fetchLoginTimeIssues() {
     to: range.monthEnd,
   });
 
-  return sortedIssues.map((issue) =>
+  return Promise.all(sortedIssues.map(async (issue) =>
     Object.assign({}, issue, {
       loginSpentHours: (spentDetailsByIssueId.get(Number(issue.id)) || {}).hours || 0,
-      loginSpentEntries: (spentDetailsByIssueId.get(Number(issue.id)) || {}).entries || [],
+      loginSpentEntries: sortTimeEntries(await fetchTimeEntryPages({ issueId: issue.id })),
       spentUserIds: getSpentUserIds(spentDetailsByIssueId.get(Number(issue.id)) || {}),
     })
-  );
+  ));
 }
 
 async function fetchStatusIds() {
@@ -1102,8 +1102,8 @@ async function fetchTimeEntryPages({ issueId, userId, spentFrom, spentTo }) {
 
   while (offset < total) {
     const url = new URL(`${apiBaseUrl}/time_entries.json`);
-    url.searchParams.set("from", formatApiDate(spentFrom));
-    url.searchParams.set("to", formatApiDate(spentTo));
+    if (spentFrom) url.searchParams.set("from", formatApiDate(spentFrom));
+    if (spentTo) url.searchParams.set("to", formatApiDate(spentTo));
     url.searchParams.set("limit", String(limit));
     url.searchParams.set("offset", String(offset));
     if (userId) {
