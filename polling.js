@@ -3,7 +3,10 @@ const WATCH_DATE_KEY = "myRedmineWatchDate";
 const WATCH_SEEN_IDS_KEY = "myRedmineSeenIds";
 const WATCH_COUNT_KEY = "myRedmineWatchCount";
 const WATCH_ISSUES_KEY = "myRedmineUpdatedIssues";
+const WATCH_PARENT_IDS_KEY = "myRedmineWatchParentIds";
 const NOTIF_PERM_KEY = "myRedmineNotifPerm";
+
+const WATCH_RELATION_LABELS = { direct: "Direct", parent: "Parent", sibling: "Sibling" };
 
 const FAVICON_NORMAL = "./favicon.svg";
 const FAVICON_BADGE = "./favicon-badge.svg";
@@ -11,6 +14,7 @@ const FAVICON_BADGE = "./favicon-badge.svg";
 const elsWatch = {
   toggle: document.querySelector("#watchToggle"),
   interval: document.querySelector("#watchInterval"),
+  related: document.querySelector("#watchRelatedToggle"),
   badge: document.querySelector("#watchBadge"),
   section: document.querySelector("#updatedSection"),
   info: document.querySelector("#updatedInfo"),
@@ -33,17 +37,28 @@ function requestNotificationPermission() {
   Notification.requestPermission();
 }
 
-function showUpdateNotification(count) {
+function showUpdateNotification(issues) {
   if (!("Notification" in window)) {
     return;
   }
   if (Notification.permission !== "granted") {
     return;
   }
+  const count = issues.length;
   const title = count === 1 ? "1 issue updated" : `${count} issues updated`;
+  const lines = issues.slice(0, 5).map((issue) => {
+    const assignee = issue.assigned_to && issue.assigned_to.name ? issue.assigned_to.name : "-";
+    const relation = issue.watchRelation || "direct";
+    const tag = relation === "direct" ? "" : ` (${relation})`;
+    return `#${issue.id}${tag} – ${assignee}`;
+  });
+  if (count > 5) {
+    lines.push(`… and ${count - 5} more issues`);
+  }
+  lines.push("Click to view on Redmine Dashboard");
   try {
     const n = new Notification(title, {
-      body: "Click to view on Redmine Dashboard",
+      body: lines.join("\n"),
       icon: FAVICON_BADGE,
       tag: "redmine-watch",
       renotify: true,
@@ -85,6 +100,10 @@ function initPolling() {
       elsWatch.interval.value = String(config.interval);
       elsWatch.interval.addEventListener("change", onWatchConfigChange);
     }
+    if (elsWatch.related) {
+      elsWatch.related.checked = config.relatedEnabled;
+      elsWatch.related.addEventListener("change", onWatchRelatedChange);
+    }
 
     const bind = (id, event, fn) => {
       const el = document.querySelector(id);
@@ -115,10 +134,15 @@ function loadWatchConfig() {
   try {
     const raw = localStorage.getItem(WATCH_CONFIG_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const config = JSON.parse(raw);
+      return {
+        enabled: !!config.enabled,
+        interval: Number(config.interval) || 5,
+        relatedEnabled: !!config.relatedEnabled,
+      };
     }
   } catch {}
-  return { enabled: false, interval: 5 };
+  return { enabled: false, interval: 5, relatedEnabled: false };
 }
 
 function saveWatchConfig() {
@@ -127,8 +151,16 @@ function saveWatchConfig() {
     JSON.stringify({
       enabled: elsWatch.toggle.checked,
       interval: Number(elsWatch.interval.value),
+      relatedEnabled: !!(elsWatch.related && elsWatch.related.checked),
     })
   );
+}
+
+function onWatchRelatedChange() {
+  saveWatchConfig();
+  if (!elsWatch.related.checked) {
+    purgeRelatedIssues();
+  }
 }
 
 function toggleWatch() {
@@ -217,7 +249,7 @@ function onVisibilityChange() {
 
 function restoreWatchState() {
   try {
-    const count = parseInt(localStorage.getItem(WATCH_COUNT_KEY) || "0", 10);
+    const count = loadUpdatedIssues().length;
     if (count > 0) {
       newIssueCount = count;
       showBadge(count);
@@ -251,11 +283,34 @@ async function checkForUpdates() {
     const issues = Array.isArray(data.issues) ? data.issues : [];
 
     const seenIds = loadSeenIds();
+    const parentIds = loadParentIds();
+    const relatedEnabled = isRelatedWatchEnabled();
+    let parentIdsChanged = false;
+
+    issues.forEach((issue) => {
+      const assigneeId = Number(issue.assigned_to && issue.assigned_to.id);
+      const parentId = issue.parent ? Number(issue.parent.id) : 0;
+      if (dashboardAssigneeIdSet.has(assigneeId) && parentId) {
+        parentIds.add(parentId);
+        parentIdsChanged = true;
+      }
+    });
+
     const newIssues = [];
 
     for (const issue of issues) {
       const assigneeId = Number(issue.assigned_to && issue.assigned_to.id);
-      if (!dashboardAssigneeIdSet.has(assigneeId)) {
+      const isDirect = dashboardAssigneeIdSet.has(assigneeId);
+      const parentId = issue.parent ? Number(issue.parent.id) : 0;
+      let relation = "";
+      if (isDirect) {
+        relation = "direct";
+      } else if (relatedEnabled && parentIds.has(Number(issue.id))) {
+        relation = "parent";
+      } else if (relatedEnabled && parentId && parentIds.has(parentId)) {
+        relation = "sibling";
+      }
+      if (!relation) {
         continue;
       }
       const issueDate = String(issue.updated_on || "").substring(0, 10);
@@ -267,24 +322,31 @@ async function checkForUpdates() {
       const lastSeen = seenIds.get(id);
       if (!lastSeen || updatedOn > lastSeen) {
         seenIds.set(id, updatedOn);
+        issue.watchRelation = relation;
         newIssues.push(issue);
       }
+    }
+
+    if (parentIdsChanged) {
+      localStorage.setItem(WATCH_PARENT_IDS_KEY, JSON.stringify(Array.from(parentIds)));
     }
 
     if (newIssues.length > 0) {
       // Reload issues list from localStorage to pick up any dismissals
       // that happened during the async API call above
       const currentIssues = loadUpdatedIssues();
-      const updated = currentIssues.concat(newIssues);
+      const mergedById = new Map(currentIssues.map((issue) => [Number(issue.id), issue]));
+      newIssues.forEach((issue) => mergedById.set(Number(issue.id), issue));
+      const updated = Array.from(mergedById.values());
       localStorage.setItem(WATCH_ISSUES_KEY, JSON.stringify(updated));
 
-      const total = newIssueCount + newIssues.length;
+      const total = updated.length;
       newIssueCount = total;
       localStorage.setItem(WATCH_COUNT_KEY, String(total));
       showBadge(total);
       updateTitle(total);
       setFaviconBadge();
-      showUpdateNotification(newIssues.length);
+      showUpdateNotification(newIssues);
       renderUpdatedSection();
       setStatus(`Watch: ${newIssues.length} new issue(s) found.`, "ok");
     } else {
@@ -316,13 +378,42 @@ function loadSeenIds() {
   return new Map();
 }
 
+function isRelatedWatchEnabled() {
+  return !!(elsWatch.related && elsWatch.related.checked);
+}
+
+function loadParentIds() {
+  try {
+    const stored = localStorage.getItem(WATCH_PARENT_IDS_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return new Set(parsed.map(Number).filter((id) => Number.isFinite(id)));
+      }
+    }
+  } catch {}
+  return new Set();
+}
+
+function getWatchRelation(issue) {
+  return WATCH_RELATION_LABELS[(issue && issue.watchRelation) || "direct"] || "Direct";
+}
+
 function loadUpdatedIssues() {
   try {
     const stored = localStorage.getItem(WATCH_ISSUES_KEY);
     if (stored) {
       const arr = JSON.parse(stored);
       if (Array.isArray(arr)) {
-        return arr;
+        const byId = new Map();
+        arr.forEach((issue) => {
+          const id = Number(issue.id);
+          const prev = byId.get(id);
+          if (!prev || String(issue.updated_on || "") > String(prev.updated_on || "")) {
+            byId.set(id, issue);
+          }
+        });
+        return Array.from(byId.values()).sort((a, b) => compareDate(b.updated_on, a.updated_on));
       }
     }
   } catch {}
@@ -370,6 +461,29 @@ function markIssuesSeen(issues) {
   localStorage.setItem(WATCH_SEEN_IDS_KEY, JSON.stringify(Object.fromEntries(seenIds)));
 }
 
+function purgeRelatedIssues() {
+  const issues = loadUpdatedIssues();
+  const kept = issues.filter((issue) => (issue.watchRelation || "direct") === "direct");
+  if (kept.length === issues.length) {
+    return;
+  }
+  newIssueCount = kept.length;
+  if (kept.length > 0) {
+    localStorage.setItem(WATCH_ISSUES_KEY, JSON.stringify(kept));
+    localStorage.setItem(WATCH_COUNT_KEY, String(kept.length));
+    showBadge(kept.length);
+    updateTitle(kept.length);
+    renderUpdatedSection();
+  } else {
+    localStorage.setItem(WATCH_COUNT_KEY, "0");
+    localStorage.removeItem(WATCH_ISSUES_KEY);
+    hideBadge();
+    updateTitle(0);
+    hideUpdatedSection();
+    clearFaviconBadge();
+  }
+}
+
 function dismissUpdates() {
   const issues = loadUpdatedIssues();
   markIssuesSeen(issues);
@@ -414,6 +528,21 @@ function dismissIssue(id) {
   }
 }
 
+const UPDATED_TIME_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatUpdatedTime(value) {
+  if (!value) {
+    return "-";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+  return `${date.getFullYear()} ${UPDATED_TIME_MONTHS[date.getMonth()]} ${pad2(date.getDate())} ${pad2(
+    date.getHours()
+  )}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
+}
+
 function updatedIssueRow(issue, index) {
   const issueUrl = getIssueUrl(issue);
   const done = Math.max(0, Math.min(100, Number(issue.done_ratio) || 0));
@@ -425,6 +554,7 @@ function updatedIssueRow(issue, index) {
       <td>${escapeHtml((issue.project && issue.project.name) || "-")}</td>
       <td>${escapeHtml(issue.subject || "-")}</td>
       <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
+      <td><span class="tag">${escapeHtml(getWatchRelation(issue))}</span></td>
       <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
       <td>${escapeHtml(formatDate(issue.start_date))}</td>
       <td>${escapeHtml(formatDate(issue.due_date))}</td>
@@ -432,6 +562,7 @@ function updatedIssueRow(issue, index) {
         ${done}%
         <div class="done-bar" aria-hidden="true"><span style="width: ${done}%"></span></div>
       </td>
+      <td>${escapeHtml(formatUpdatedTime(issue.updated_on))}</td>
       <td><button class="dismiss-btn" title="Dismiss this">✕</button></td>
     </tr>
   `;
@@ -451,7 +582,7 @@ function clearBadge() {
 
 let newIssueCount = (() => {
   try {
-    return parseInt(localStorage.getItem(WATCH_COUNT_KEY) || "0", 10);
+    return loadUpdatedIssues().length;
   } catch {
     return 0;
   }
