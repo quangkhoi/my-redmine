@@ -29,6 +29,13 @@ const ASSIGNEES = [
   { id: 123, name: "Phi" },
 ];
 const DASHBOARD_ASSIGNEE_IDS = ASSIGNEES.map((user) => user.id);
+const MEMBER_STATS_ACTIVITIES = {
+  "開発：1回目": "code",
+  "開発単体テスト": "test",
+  "開発修正：2回目以降": "fix",
+  "コードレビュー": "review",
+};
+const MEMBER_STATS_CATEGORIES = ["code", "test", "fix", "review", "other"];
 
 const WORK_ITEM_STATUS_NAMES = new Set([
   ISSUE_STATUS.notStarted.name,
@@ -90,6 +97,7 @@ const els = {
   loadReport: document.querySelector("#loadReport"),
   exportReport: document.querySelector("#exportReport"),
   loadLoginTime: document.querySelector("#loadLoginTime"),
+  loadMemberStats: document.querySelector("#loadMemberStats"),
   dashboardStartDateFrom: document.querySelector("#dashboardStartDateFrom"),
   dashboardStartDateTo: document.querySelector("#dashboardStartDateTo"),
   myTaskUserId: document.querySelector("#myTaskUserId"),
@@ -112,6 +120,12 @@ const els = {
   loginLoggedUserId: document.querySelector("#loginLoggedUserId"),
   toggleLoggedTimeTickets: document.querySelector("#toggleLoggedTimeTickets"),
   loginTimeRows: document.querySelector("#loginTimeRows"),
+  memberStatsFromDate: document.querySelector("#memberStatsFromDate"),
+  memberStatsToDate: document.querySelector("#memberStatsToDate"),
+  memberStatsTitle: document.querySelector("#memberStatsTitle"),
+  memberStatsInfo: document.querySelector("#memberStatsInfo"),
+  memberStatsChart: document.querySelector("#memberStatsChart"),
+  memberStatsRows: document.querySelector("#memberStatsRows"),
   notStartedStartCondition: document.querySelector("#notStartedStartCondition"),
   notStartedDueCondition: document.querySelector("#notStartedDueCondition"),
   processingCount: document.querySelector("#processingCount"),
@@ -155,6 +169,7 @@ function init() {
   renderMyTaskControls();
   renderReportControls();
   renderLoginTimeControls();
+  renderMemberStatsControls();
   renderListConditions();
   renderMyTaskConditions();
   renderReportConditions();
@@ -191,6 +206,7 @@ function bindEvents() {
   els.loadReport.addEventListener("click", loadReport);
   els.exportReport.addEventListener("click", exportReport);
   els.loadLoginTime.addEventListener("click", loadLoginTime);
+  els.loadMemberStats.addEventListener("click", loadMemberStats);
   els.toggleLoggedTimeTickets.addEventListener("change", toggleLoggedTimeTickets);
   els.hideNotStartedNonDevelopment.addEventListener("change", toggleNotStartedNonDevelopment);
   els.hideNotStartedPastStart.addEventListener("change", () => {
@@ -208,6 +224,8 @@ function bindEvents() {
   els.loginLoggedUserId.addEventListener("change", applyLogTimeLoggedUserFilter);
   els.loginYear.addEventListener("change", renderLoginTimeConditions);
   els.loginMonth.addEventListener("change", renderLoginTimeConditions);
+  els.memberStatsFromDate.addEventListener("change", renderMemberStatsConditions);
+  els.memberStatsToDate.addEventListener("change", renderMemberStatsConditions);
   els.reportRows.addEventListener("change", handleReportSelectionChange);
   els.navItems.forEach((item) => {
     item.addEventListener("click", () => switchView(item.dataset.view));
@@ -298,6 +316,8 @@ function switchView(viewName) {
   const targetId =
     viewName === "login-time"
       ? "loginTimeView"
+      : viewName === "member-stats"
+      ? "memberStatsView"
       : viewName === "my-task"
       ? "myTaskView"
       : viewName === "daily-report"
@@ -367,6 +387,20 @@ function renderLoginTimeControls() {
   els.loginMonth.innerHTML = Array.from({ length: 12 }, (_, index) => index + 1)
     .map((month) => `<option value="${month}" ${month === currentMonth ? "selected" : ""}>${month}</option>`)
     .join("");
+}
+
+function renderMemberStatsControls() {
+  const today = new Date();
+  els.memberStatsFromDate.value = formatInputDate(new Date(today.getFullYear(), today.getMonth(), 1));
+  els.memberStatsToDate.value = formatInputDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+  renderMemberStatsConditions();
+}
+
+function renderMemberStatsConditions() {
+  els.memberStatsTitle.textContent = `Thống kê thành viên - ${els.memberStatsFromDate.value || "-"} ~ ${els.memberStatsToDate.value || "-"}`;
+  els.memberStatsInfo.textContent = "Chưa tải dữ liệu";
+  els.memberStatsChart.textContent = "";
+  els.memberStatsRows.innerHTML = '<tr><td colspan="7" class="empty-cell">Bấm Load data để xem thống kê.</td></tr>';
 }
 
 function renderLoginTimeConditions() {
@@ -618,6 +652,37 @@ async function loadLoginTime() {
     setStatus("Could not load log time data", "error");
   } finally {
     els.loadLoginTime.disabled = false;
+    endGlobalLoading();
+  }
+}
+
+async function loadMemberStats() {
+  switchView("member-stats");
+  beginGlobalLoading();
+  els.loadMemberStats.disabled = true;
+  els.memberStatsInfo.textContent = "Đang tải...";
+  els.memberStatsChart.textContent = "";
+  els.memberStatsRows.innerHTML = '<tr><td colspan="7" class="empty-cell">Đang tải dữ liệu...</td></tr>';
+
+  try {
+    requireRuntimeConfig();
+    const range = getSelectedMemberStatsRange();
+    validateDateRange(range.from, range.to);
+    const entries = await fetchTimeEntryPages({
+      spentFrom: range.from,
+      spentTo: range.to,
+    });
+    const stats = summarizeMemberTime(entries);
+    renderMemberStats(stats);
+    markLoadButtonAsReload(els.loadMemberStats);
+    setStatus(`Loaded ${entries.length} time entries from Redmine.`, "ok");
+  } catch (error) {
+    els.memberStatsInfo.textContent = "Lỗi tải dữ liệu";
+    els.memberStatsChart.textContent = "";
+    els.memberStatsRows.innerHTML = `<tr><td colspan="7" class="empty-cell">${escapeHtml(error.message)}</td></tr>`;
+    setStatus("Could not load member statistics", "error");
+  } finally {
+    els.loadMemberStats.disabled = false;
     endGlobalLoading();
   }
 }
@@ -1433,6 +1498,13 @@ function getSelectedLoginMonthRange() {
   return { year, month, monthStart, monthEnd };
 }
 
+function getSelectedMemberStatsRange() {
+  return {
+    from: parseInputDate(els.memberStatsFromDate.value),
+    to: parseInputDate(els.memberStatsToDate.value),
+  };
+}
+
 function getSelectedLoginAssigneeIds() {
   const selectedUserId = els.loginUserId.value;
   if (!selectedUserId || selectedUserId === "ALL") {
@@ -1829,6 +1901,56 @@ function renderLoginTimeList(issues) {
 
   els.loginTimeRows.innerHTML = filteredIssues.map(loginTimeRow).join("");
   applyLogTimeLoggedUserFilter();
+}
+
+function summarizeMemberTime(entries) {
+  const stats = ASSIGNEES.map((user) => ({
+    id: user.id,
+    name: user.name,
+    code: 0,
+    test: 0,
+    fix: 0,
+    review: 0,
+    other: 0,
+    total: 0,
+  }));
+  const byUserId = new Map(stats.map((item) => [item.id, item]));
+
+  entries.forEach((entry) => {
+    const item = byUserId.get(Number(entry.user && entry.user.id));
+    const hours = Number(entry.hours);
+    if (!item || !Number.isFinite(hours) || hours < 0) return;
+    const activity = String((entry.activity && entry.activity.name) || "");
+    const category = Object.prototype.hasOwnProperty.call(MEMBER_STATS_ACTIVITIES, activity)
+      ? MEMBER_STATS_ACTIVITIES[activity]
+      : "other";
+    item[category] += hours;
+    item.total += hours;
+  });
+
+  return stats;
+}
+
+function renderMemberStats(stats) {
+  const maxHours = Math.max(0, ...stats.map((item) => item.total));
+  els.memberStatsInfo.textContent = `${stats.length} thành viên`;
+  els.memberStatsChart.innerHTML = stats.map((item) => {
+    const width = maxHours ? Math.min(100, item.total / maxHours * 100) : 0;
+    const segments = MEMBER_STATS_CATEGORIES.map((category) => {
+      const segmentWidth = item.total ? item[category] / item.total * 100 : 0;
+      return `<span class="member-stats-segment member-stats-${category}" style="width:${segmentWidth}%"></span>`;
+    }).join("");
+    return `<div class="member-stats-chart-row">
+      <span class="member-stats-name">${escapeHtml(item.name)}</span>
+      <div class="member-stats-track" aria-hidden="true"><div class="member-stats-bar" style="width:${width}%">${segments}</div></div>
+      <strong>${formatHours(item.total)}</strong>
+    </div>`;
+  }).join("");
+  els.memberStatsRows.innerHTML = stats.map((item) => `<tr>
+    <th scope="row">${escapeHtml(item.name)}</th>
+    ${MEMBER_STATS_CATEGORIES.map((category) => `<td>${formatHours(item[category])}</td>`).join("")}
+    <td><strong>${formatHours(item.total)}</strong></td>
+  </tr>`).join("");
 }
 
 function applyLogTimeLoggedUserFilter() {
