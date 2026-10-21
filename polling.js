@@ -33,17 +33,26 @@ function requestNotificationPermission() {
   Notification.requestPermission();
 }
 
-function showUpdateNotification(count) {
+function showUpdateNotification(issues) {
   if (!("Notification" in window)) {
     return;
   }
   if (Notification.permission !== "granted") {
     return;
   }
+  const count = issues.length;
   const title = count === 1 ? "1 issue updated" : `${count} issues updated`;
+  const lines = issues.slice(0, 5).map((issue) => {
+    const assignee = issue.assigned_to && issue.assigned_to.name ? issue.assigned_to.name : "-";
+    return `#${issue.id} – ${assignee}`;
+  });
+  if (count > 5) {
+    lines.push(`… and ${count - 5} more issues`);
+  }
+  lines.push("Click to view on Redmine Dashboard");
   try {
     const n = new Notification(title, {
-      body: "Click to view on Redmine Dashboard",
+      body: lines.join("\n"),
       icon: FAVICON_BADGE,
       tag: "redmine-watch",
       renotify: true,
@@ -217,7 +226,7 @@ function onVisibilityChange() {
 
 function restoreWatchState() {
   try {
-    const count = parseInt(localStorage.getItem(WATCH_COUNT_KEY) || "0", 10);
+    const count = loadUpdatedIssues().length;
     if (count > 0) {
       newIssueCount = count;
       showBadge(count);
@@ -275,16 +284,18 @@ async function checkForUpdates() {
       // Reload issues list from localStorage to pick up any dismissals
       // that happened during the async API call above
       const currentIssues = loadUpdatedIssues();
-      const updated = currentIssues.concat(newIssues);
+      const mergedById = new Map(currentIssues.map((issue) => [Number(issue.id), issue]));
+      newIssues.forEach((issue) => mergedById.set(Number(issue.id), issue));
+      const updated = Array.from(mergedById.values());
       localStorage.setItem(WATCH_ISSUES_KEY, JSON.stringify(updated));
 
-      const total = newIssueCount + newIssues.length;
+      const total = updated.length;
       newIssueCount = total;
       localStorage.setItem(WATCH_COUNT_KEY, String(total));
       showBadge(total);
       updateTitle(total);
       setFaviconBadge();
-      showUpdateNotification(newIssues.length);
+      showUpdateNotification(newIssues);
       renderUpdatedSection();
       setStatus(`Watch: ${newIssues.length} new issue(s) found.`, "ok");
     } else {
@@ -322,7 +333,15 @@ function loadUpdatedIssues() {
     if (stored) {
       const arr = JSON.parse(stored);
       if (Array.isArray(arr)) {
-        return arr;
+        const byId = new Map();
+        arr.forEach((issue) => {
+          const id = Number(issue.id);
+          const prev = byId.get(id);
+          if (!prev || String(issue.updated_on || "") > String(prev.updated_on || "")) {
+            byId.set(id, issue);
+          }
+        });
+        return Array.from(byId.values()).sort((a, b) => compareDate(b.updated_on, a.updated_on));
       }
     }
   } catch {}
@@ -451,7 +470,7 @@ function clearBadge() {
 
 let newIssueCount = (() => {
   try {
-    return parseInt(localStorage.getItem(WATCH_COUNT_KEY) || "0", 10);
+    return loadUpdatedIssues().length;
   } catch {
     return 0;
   }
