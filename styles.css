@@ -249,6 +249,21 @@ button {
   vertical-align: middle;
 }
 
+#updatedSection th.dev-pic {
+  background: #fff3dc;
+  color: var(--warn);
+}
+
+#updatedSection td.dev-pic {
+  background: #fffaf0;
+  color: var(--warn);
+  font-weight: 700;
+}
+
+#updatedSection tbody tr:hover td.dev-pic {
+  background: #fff3dc;
+}
+
 .dismiss-btn {
   width: 26px;
   height: 26px;

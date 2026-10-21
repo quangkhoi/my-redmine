@@ -23,6 +23,7 @@ const elsWatch = {
 
 let watchTimer = null;
 let pollScheduled = false;
+let devPicById = new Map();
 
 function requestNotificationPermission() {
   if (!("Notification" in window)) {
@@ -256,6 +257,7 @@ function restoreWatchState() {
       updateTitle(count);
       setFaviconBadge();
       renderUpdatedSection();
+      refreshDevPics();
     }
   } catch {}
 }
@@ -355,6 +357,8 @@ async function checkForUpdates() {
 
     // Always save seenIds to capture any dismissals made during the async call
     localStorage.setItem(WATCH_SEEN_IDS_KEY, JSON.stringify(Object.fromEntries(seenIds)));
+
+    await refreshDevPics();
   } catch {
     /* silent */
   }
@@ -543,6 +547,91 @@ function formatUpdatedTime(value) {
   )}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
 }
 
+async function fetchIssuesByParam(paramName, paramValue) {
+  const apiBaseUrl = normalizeBaseUrl(getApiBaseUrl());
+  if (!apiBaseUrl) {
+    return [];
+  }
+  const url = new URL(`${apiBaseUrl}/issues.json`);
+  url.searchParams.set(paramName, String(paramValue));
+  url.searchParams.set("status_id", "*");
+  if (paramName === "parent_id") {
+    url.searchParams.set("limit", "100");
+  }
+  const data = await redmineGet(url);
+  return Array.isArray(data.issues) ? data.issues : [];
+}
+
+async function fetchFamilyIssues(rows) {
+  const parentIds = new Set();
+  rows.forEach((issue) => {
+    const parentId = Number(issue.parent && issue.parent.id);
+    if (parentId) {
+      parentIds.add(parentId);
+    }
+  });
+
+  const families = new Map();
+  await Promise.all(
+    Array.from(parentIds).map(async (parentId) => {
+      let children = [];
+      let parent = null;
+      try {
+        children = await fetchIssuesByParam("parent_id", parentId);
+      } catch {}
+      try {
+        const list = await fetchIssuesByParam("issue_id", parentId);
+        parent = list.find((issue) => Number(issue.id) === parentId) || null;
+      } catch {}
+      families.set(parentId, { parent, children });
+    })
+  );
+  return families;
+}
+
+function computeDevPic(issue, families) {
+  const parentId = Number(issue.parent && issue.parent.id);
+  const entry = families ? families.get(parentId || Number(issue.id)) : null;
+  const members = [issue];
+  if (entry) {
+    if (entry.parent) {
+      members.push(entry.parent);
+    }
+    (entry.children || []).forEach((child) => members.push(child));
+  }
+
+  const byId = new Map();
+  members.forEach((member) => byId.set(Number(member.id), member));
+
+  const devTickets = Array.from(byId.values()).filter(
+    (ticket) => getTrackerName(ticket) === TRACKER_NAMES.development
+  );
+  if (devTickets.length === 0) {
+    return "-";
+  }
+
+  const openTickets = devTickets.filter((ticket) => !ticket.closed_on);
+  const group = (openTickets.length > 0 ? openTickets : devTickets)
+    .slice()
+    .sort((a, b) => Number(a.id) - Number(b.id));
+  return group.map((ticket) => (ticket.assigned_to && ticket.assigned_to.name) || "-").join(", ");
+}
+
+async function refreshDevPics() {
+  try {
+    const rows = loadUpdatedIssues();
+    if (rows.length === 0) {
+      devPicById = new Map();
+      return;
+    }
+    const families = await fetchFamilyIssues(rows);
+    const next = new Map();
+    rows.forEach((row) => next.set(Number(row.id), computeDevPic(row, families)));
+    devPicById = next;
+    renderUpdatedSection();
+  } catch {}
+}
+
 function updatedIssueRow(issue, index) {
   const issueUrl = getIssueUrl(issue);
   const done = Math.max(0, Math.min(100, Number(issue.done_ratio) || 0));
@@ -555,6 +644,7 @@ function updatedIssueRow(issue, index) {
       <td>${escapeHtml(issue.subject || "-")}</td>
       <td>${escapeHtml((issue.assigned_to && issue.assigned_to.name) || "-")}</td>
       <td><span class="tag">${escapeHtml(getWatchRelation(issue))}</span></td>
+      <td class="dev-pic">${escapeHtml(devPicById.get(Number(issue.id)) || "-")}</td>
       <td><span class="tag">${escapeHtml((issue.status && issue.status.name) || "-")}</span></td>
       <td>${escapeHtml(formatDate(issue.start_date))}</td>
       <td>${escapeHtml(formatDate(issue.due_date))}</td>
