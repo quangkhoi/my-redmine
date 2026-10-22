@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Redmine Dashboard</title>
     <meta http-equiv="Cache-Control" content="no-store" />
-    <link rel="stylesheet" href="./styles.css?v=20261014-1" />
+    <link rel="stylesheet" href="./styles.css?v=20261022-1" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260609-6" />
   </head>
   <body>
@@ -15,27 +15,54 @@
           <span>Redmine</span>
           <strong>Work view</strong>
         </button>
-        <label class="sidebar-search">
-          <span>Search issues</span>
-          <input id="globalIssueSearch" type="search" placeholder="Subject, ID, project, assignee" autocomplete="off" />
-        </label>
         <nav class="nav-list">
           <div class="nav-group active">
             <button class="nav-item active" type="button" data-view="dashboard">Dashboard <span class="nav-badge" id="watchBadge"></span></button>
-            <div class="nav-panel">
-              <div class="sidebar-field">
-                <span>Start date</span>
-              </div>
-              <label class="sidebar-field">
-                <span>From</span>
-                <input id="dashboardStartDateFrom" type="date" />
-              </label>
-              <label class="sidebar-field">
-                <span>To</span>
-                <input id="dashboardStartDateTo" type="date" />
-              </label>
-              <button class="sidebar-action" id="loadDashboard" type="button">Load data</button>
-              <hr class="sidebar-divider" />
+          </div>
+          <div class="nav-group">
+            <button class="nav-item" type="button" data-view="daily-report">Daily Report</button>
+          </div>
+          <div class="nav-group">
+            <button class="nav-item" type="button" data-view="report">Weekly Report</button>
+          </div>
+          <div class="nav-group">
+            <button class="nav-item" type="button" data-view="my-task">My Task</button>
+          </div>
+          <div class="nav-group">
+            <button class="nav-item" type="button" data-view="login-time">Log time</button>
+          </div>
+          <div class="nav-group">
+            <button class="nav-item" type="button" data-view="member-stats">Member Statistics</button>
+          </div>
+          <div class="nav-group config-nav-group">
+            <button class="nav-item" type="button" data-view="schema-config">Data Config</button>
+          </div>
+        </nav>
+      </aside>
+      <button class="collapsed-rail" id="expandSidebar" type="button" aria-controls="appSidebar" aria-label="Open sidebar">
+        &gt;&gt;
+      </button>
+
+      <section class="content-area">
+        <label class="global-search">
+          <span>Search issues</span>
+          <input id="globalIssueSearch" type="search" placeholder="Subject, ID, project, assignee" autocomplete="off" />
+        </label>
+        <section class="view active" id="dashboardView" aria-label="Dashboard">
+          <header class="page-header">
+            <p class="eyebrow">Dashboard</p>
+          </header>
+          <div class="page-controls" aria-label="Dashboard controls">
+            <label class="sidebar-field">
+              <span>Start date from</span>
+              <input id="dashboardStartDateFrom" type="date" />
+            </label>
+            <label class="sidebar-field">
+              <span>Start date to</span>
+              <input id="dashboardStartDateTo" type="date" />
+            </label>
+            <button class="sidebar-action" id="loadDashboard" type="button">Load data</button>
+            <div class="watch-controls" role="group" aria-label="Watch settings">
               <label class="sidebar-field watch-row">
                 <input id="watchToggle" type="checkbox" />
                 <span class="toggle-track"></span>
@@ -58,97 +85,6 @@
               </label>
             </div>
           </div>
-          <div class="nav-group">
-            <button class="nav-item" type="button" data-view="daily-report">Daily Report</button>
-            <div class="nav-panel">
-              <button class="sidebar-action" id="loadDailyReport" type="button">Load data</button>
-            </div>
-          </div>
-          <div class="nav-group">
-            <button class="nav-item" type="button" data-view="report">Weekly Report</button>
-            <div class="nav-panel">
-              <label class="sidebar-field">
-                <span>From</span>
-                <input id="reportFromDate" type="date" />
-              </label>
-              <label class="sidebar-field">
-                <span>To</span>
-                <input id="reportToDate" type="date" />
-              </label>
-              <button class="sidebar-action" id="loadReport" type="button">Load data</button>
-            </div>
-          </div>
-          <div class="nav-group">
-            <button class="nav-item" type="button" data-view="my-task">My Task</button>
-            <div class="nav-panel">
-              <label class="sidebar-field">
-                <span>User</span>
-                <select id="myTaskUserId"></select>
-              </label>
-              <div class="sidebar-field">
-                <span>Start date</span>
-              </div>
-              <label class="sidebar-field">
-                <span>From</span>
-                <input id="myTaskStartDate" type="date" />
-              </label>
-              <label class="sidebar-field">
-                <span>To</span>
-                <input id="myTaskEndDate" type="date" />
-              </label>
-              <button class="sidebar-action" id="loadMyTask" type="button">Load data</button>
-            </div>
-          </div>
-          <div class="nav-group">
-            <button class="nav-item" type="button" data-view="login-time">Log time</button>
-            <div class="nav-panel">
-              <label class="sidebar-field">
-                <span>User</span>
-                <select id="loginUserId"></select>
-              </label>
-              <label class="sidebar-field">
-                <span>Year</span>
-                <select id="loginYear"></select>
-              </label>
-              <label class="sidebar-field">
-                <span>Month</span>
-                <select id="loginMonth"></select>
-              </label>
-              <button class="sidebar-action" id="loadLoginTime" type="button">Load data</button>
-            </div>
-          </div>
-          <div class="nav-group">
-            <button class="nav-item" type="button" data-view="member-stats">Member Statistics</button>
-            <div class="nav-panel">
-              <label class="sidebar-field">
-                <span>From</span>
-                <input id="memberStatsFromDate" type="date" />
-              </label>
-              <label class="sidebar-field">
-                <span>To</span>
-                <input id="memberStatsToDate" type="date" />
-              </label>
-              <button class="sidebar-action" id="loadMemberStats" type="button">Load data</button>
-            </div>
-          </div>
-          <div class="nav-group" style="border-top:1px solid var(--line);padding-top:16px;margin-top:8px">
-            <button class="nav-item" type="button" data-view="schema-config">Data Config</button>
-            <div class="nav-panel">
-              <p style="font-size:12px;color:var(--muted);margin:0">Edit table schema overrides saved in browser.</p>
-              <button class="sidebar-action" id="loadSchemaConfig" type="button">Load data</button>
-            </div>
-          </div>
-        </nav>
-      </aside>
-      <button class="collapsed-rail" id="expandSidebar" type="button" aria-controls="appSidebar" aria-label="Open sidebar">
-        &gt;&gt;
-      </button>
-
-      <section class="content-area">
-        <section class="view active" id="dashboardView" aria-label="Dashboard">
-          <header class="page-header">
-            <p class="eyebrow">Dashboard</p>
-          </header>
 
           <section class="summary-grid" aria-label="Status summary">
             <article class="metric">
@@ -314,6 +250,9 @@
           <header class="page-header">
             <p class="eyebrow">Daily Report</p>
           </header>
+          <div class="page-controls" aria-label="Daily Report controls">
+            <button class="sidebar-action" id="loadDailyReport" type="button">Load data</button>
+          </div>
 
           <section class="dashboard-list" aria-label="Daily report content">
             <div class="list-heading">
@@ -335,6 +274,21 @@
           <header class="page-header">
             <p class="eyebrow">My Task</p>
           </header>
+          <div class="page-controls" aria-label="My Task controls">
+            <label class="sidebar-field">
+              <span>User</span>
+              <select id="myTaskUserId"></select>
+            </label>
+            <label class="sidebar-field">
+              <span>Start date from</span>
+              <input id="myTaskStartDate" type="date" />
+            </label>
+            <label class="sidebar-field">
+              <span>Start date to</span>
+              <input id="myTaskEndDate" type="date" />
+            </label>
+            <button class="sidebar-action" id="loadMyTask" type="button">Load data</button>
+          </div>
 
           <section class="dashboard-list" aria-label="My task issue list">
             <div class="list-heading">
@@ -372,6 +326,17 @@
               <button class="list-action-button" id="exportReport" type="button" disabled>Export Excel</button>
             </div>
           </header>
+          <div class="page-controls" aria-label="Weekly Report controls">
+            <label class="sidebar-field">
+              <span>From</span>
+              <input id="reportFromDate" type="date" />
+            </label>
+            <label class="sidebar-field">
+              <span>To</span>
+              <input id="reportToDate" type="date" />
+            </label>
+            <button class="sidebar-action" id="loadReport" type="button">Load data</button>
+          </div>
 
           <section class="dashboard-list" aria-label="Weekly report content">
             <div class="list-heading">
@@ -406,6 +371,21 @@
           <header class="page-header">
             <p class="eyebrow">Log time</p>
           </header>
+          <div class="page-controls" aria-label="Log time controls">
+            <label class="sidebar-field">
+              <span>User</span>
+              <select id="loginUserId"></select>
+            </label>
+            <label class="sidebar-field">
+              <span>Year</span>
+              <select id="loginYear"></select>
+            </label>
+            <label class="sidebar-field">
+              <span>Month</span>
+              <select id="loginMonth"></select>
+            </label>
+            <button class="sidebar-action" id="loadLoginTime" type="button">Load data</button>
+          </div>
 
           <section class="dashboard-list" aria-label="Log time issue list">
             <div class="list-heading">
@@ -448,6 +428,17 @@
           <header class="page-header">
             <p class="eyebrow">Member Statistics</p>
           </header>
+          <div class="page-controls" aria-label="Member Statistics controls">
+            <label class="sidebar-field">
+              <span>From</span>
+              <input id="memberStatsFromDate" type="date" />
+            </label>
+            <label class="sidebar-field">
+              <span>To</span>
+              <input id="memberStatsToDate" type="date" />
+            </label>
+            <button class="sidebar-action" id="loadMemberStats" type="button">Load data</button>
+          </div>
 
           <section class="dashboard-list" aria-label="Time by member">
             <div class="list-heading">
@@ -479,6 +470,10 @@
           <header class="page-header">
             <p class="eyebrow">Schema Config</p>
           </header>
+          <div class="page-controls" aria-label="Data Config controls">
+            <span>Edit table schema overrides saved in browser.</span>
+            <button class="sidebar-action" id="loadSchemaConfig" type="button">Load data</button>
+          </div>
           <section class="dashboard-list" aria-label="Schema configuration">
             <div class="list-heading">
               <div>
