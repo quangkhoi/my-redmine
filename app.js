@@ -1948,7 +1948,7 @@ function renderMemberStats(stats) {
   }).join("");
   els.memberStatsRows.innerHTML = stats.map((item) => `<tr>
     <th scope="row">${escapeHtml(item.name)}</th>
-    ${MEMBER_STATS_CATEGORIES.map((category) => `<td>${formatHours(item[category])}</td>`).join("")}
+    ${MEMBER_STATS_CATEGORIES.map((category) => `<td>${formatHours(item[category])} (${item.total ? Math.round(item[category] / item.total * 100) : 0}%)</td>`).join("")}
     <td><strong>${formatHours(item.total)}</strong></td>
   </tr>`).join("");
 }

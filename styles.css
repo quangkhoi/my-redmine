@@ -789,6 +789,7 @@ h2 {
 .member-stats-table th:not(:first-child),
 .member-stats-table td {
   text-align: right;
+  white-space: nowrap;
 }
 
 .member-stats-table tbody th {

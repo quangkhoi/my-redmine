@@ -110,11 +110,13 @@ vm.runInContext(`${constants}\n${code}`, context);
   assert.equal((els.memberStatsChart.innerHTML.match(/member-stats-chart-row/g) || []).length, 6);
   assert.equal((els.memberStatsRows.innerHTML.match(/<tr>/g) || []).length, 6);
   assert(els.memberStatsChart.innerHTML.includes("50.5 h"));
-  assert(els.memberStatsRows.innerHTML.includes("50.5 h"));
+  assert(els.memberStatsRows.innerHTML.includes("2 h (40%)"));
+  assert(els.memberStatsRows.innerHTML.includes("3 h (60%)"));
+  assert(els.memberStatsRows.innerHTML.includes("50.5 h (100%)"));
   assert([...els.memberStatsChart.innerHTML.matchAll(/width:([\d.]+)%/g)].every((match) => Number(match[1]) <= 100));
 
   context.renderMemberStats(context.summarizeMemberTime([]));
   assert(!els.memberStatsChart.innerHTML.includes("NaN") && !els.memberStatsChart.innerHTML.includes("Infinity"));
-  assert.equal((els.memberStatsRows.innerHTML.match(/0 h/g) || []).length, 36);
+  assert.equal((els.memberStatsRows.innerHTML.match(/0 h \(0%\)/g) || []).length, 30);
   console.log("PASS: member activity totals, date range and defaults, pagination, chart and table, zero hours.");
 })().catch((error) => { console.error(error); process.exitCode = 1; });
