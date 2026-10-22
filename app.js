@@ -397,10 +397,10 @@ function renderMemberStatsControls() {
 }
 
 function renderMemberStatsConditions() {
-  els.memberStatsTitle.textContent = `Thống kê thành viên - ${els.memberStatsFromDate.value || "-"} ~ ${els.memberStatsToDate.value || "-"}`;
-  els.memberStatsInfo.textContent = "Chưa tải dữ liệu";
+  els.memberStatsTitle.textContent = `Member Statistics - ${els.memberStatsFromDate.value || "-"} ~ ${els.memberStatsToDate.value || "-"}`;
+  els.memberStatsInfo.textContent = "No data loaded";
   els.memberStatsChart.textContent = "";
-  els.memberStatsRows.innerHTML = '<tr><td colspan="7" class="empty-cell">Bấm Load data để xem thống kê.</td></tr>';
+  els.memberStatsRows.innerHTML = '<tr><td colspan="7" class="empty-cell">Click Load data to view statistics.</td></tr>';
 }
 
 function renderLoginTimeConditions() {
@@ -660,9 +660,9 @@ async function loadMemberStats() {
   switchView("member-stats");
   beginGlobalLoading();
   els.loadMemberStats.disabled = true;
-  els.memberStatsInfo.textContent = "Đang tải...";
+  els.memberStatsInfo.textContent = "Loading...";
   els.memberStatsChart.textContent = "";
-  els.memberStatsRows.innerHTML = '<tr><td colspan="7" class="empty-cell">Đang tải dữ liệu...</td></tr>';
+  els.memberStatsRows.innerHTML = '<tr><td colspan="7" class="empty-cell">Loading data...</td></tr>';
 
   try {
     requireRuntimeConfig();
@@ -677,7 +677,7 @@ async function loadMemberStats() {
     markLoadButtonAsReload(els.loadMemberStats);
     setStatus(`Loaded ${entries.length} time entries from Redmine.`, "ok");
   } catch (error) {
-    els.memberStatsInfo.textContent = "Lỗi tải dữ liệu";
+    els.memberStatsInfo.textContent = "Could not load data";
     els.memberStatsChart.textContent = "";
     els.memberStatsRows.innerHTML = `<tr><td colspan="7" class="empty-cell">${escapeHtml(error.message)}</td></tr>`;
     setStatus("Could not load member statistics", "error");
@@ -1836,7 +1836,7 @@ function buildDailyReportIssueHtml(issue, index) {
   const number = CIRCLED_NUMBERS[index] || `${index + 1}.`;
   return `${number}<a href="${escapeAttr(getIssueUrl(issue))}" target="_blank" rel="noreferrer">${escapeHtml(
     issue.subject || "-"
-  )} - ${escapeHtml((issue.project && issue.project.name) || "-")}</a><span class="daily-report-dates" data-copy-exclude> (Start date: ${escapeHtml(formatDate(issue.start_date))}, Due date: ${escapeHtml(formatDate(issue.due_date))})</span><span data-copy-exclude> <button type="button" class="daily-report-remove" data-remove-daily-issue="${escapeAttr(issue.id)}" aria-label="Xóa ticket #${escapeAttr(issue.id)} khỏi báo cáo" title="Xóa khỏi báo cáo; Reload để khôi phục">Xóa</button></span>`;
+  )} - ${escapeHtml((issue.project && issue.project.name) || "-")}</a><span class="daily-report-dates" data-copy-exclude> (Start date: ${escapeHtml(formatDate(issue.start_date))}, Due date: ${escapeHtml(formatDate(issue.due_date))})</span><span data-copy-exclude> <button type="button" class="daily-report-remove" data-remove-daily-issue="${escapeAttr(issue.id)}" aria-label="Remove ticket #${escapeAttr(issue.id)} from report" title="Remove from report; Reload to restore">Remove</button></span>`;
 }
 
 function getDailyReportClipboardClone() {
@@ -1933,7 +1933,7 @@ function summarizeMemberTime(entries) {
 
 function renderMemberStats(stats) {
   const maxHours = Math.max(0, ...stats.map((item) => item.total));
-  els.memberStatsInfo.textContent = `${stats.length} thành viên`;
+  els.memberStatsInfo.textContent = `${stats.length} members`;
   els.memberStatsChart.innerHTML = stats.map((item) => {
     const width = maxHours ? Math.min(100, item.total / maxHours * 100) : 0;
     const segments = MEMBER_STATS_CATEGORIES.map((category) => {

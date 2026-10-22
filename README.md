@@ -7,7 +7,7 @@ Trang web tĩnh để lấy issue từ Redmine REST API và hiển thị theo c�
 - Weekly Report
 - My Task
 - Login time
-- Thống kê thời gian theo thành viên (Code, Test, Fix bug, Review code và Khác)
+- Member Statistics (Code, Test, Fix bug, Review code, Other)
 
 ## Cách chạy
 

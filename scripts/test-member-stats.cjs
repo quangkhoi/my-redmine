@@ -63,7 +63,8 @@ vm.runInContext(`${constants}\n${code}`, context);
   context.renderMemberStatsControls();
   assert.equal(els.memberStatsFromDate.value, "2026-10-01");
   assert.equal(els.memberStatsToDate.value, "2026-10-31");
-  assert(els.memberStatsTitle.textContent.includes("2026-10-01 ~ 2026-10-31"));
+  assert.equal(els.memberStatsTitle.textContent, "Member Statistics - 2026-10-01 ~ 2026-10-31");
+  assert.equal(els.memberStatsInfo.textContent, "No data loaded");
 
   els.memberStatsFromDate.value = "2026-09-01";
   els.memberStatsToDate.value = "2026-09-30";

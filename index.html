@@ -118,7 +118,7 @@
             </div>
           </div>
           <div class="nav-group">
-            <button class="nav-item" type="button" data-view="member-stats">Thống kê thành viên</button>
+            <button class="nav-item" type="button" data-view="member-stats">Member Statistics</button>
             <div class="nav-panel">
               <label class="sidebar-field">
                 <span>From</span>
@@ -444,31 +444,31 @@
           </section>
         </section>
 
-        <section class="view" id="memberStatsView" aria-label="Thống kê thành viên">
+        <section class="view" id="memberStatsView" aria-label="Member Statistics">
           <header class="page-header">
-            <p class="eyebrow">Thống kê thành viên</p>
+            <p class="eyebrow">Member Statistics</p>
           </header>
 
-          <section class="dashboard-list" aria-label="Thời gian theo thành viên">
+          <section class="dashboard-list" aria-label="Time by member">
             <div class="list-heading">
-              <h2 id="memberStatsTitle">Thống kê thành viên</h2>
-              <div class="list-actions"><span id="memberStatsInfo">Chưa tải dữ liệu</span></div>
+              <h2 id="memberStatsTitle">Member Statistics</h2>
+              <div class="list-actions"><span id="memberStatsInfo">No data loaded</span></div>
             </div>
-            <div class="member-stats-legend" aria-label="Chú giải biểu đồ">
+            <div class="member-stats-legend" aria-label="Chart legend">
               <span><i class="member-stats-swatch member-stats-code"></i>Code</span>
               <span><i class="member-stats-swatch member-stats-test"></i>Test</span>
               <span><i class="member-stats-swatch member-stats-fix"></i>Fix bug</span>
               <span><i class="member-stats-swatch member-stats-review"></i>Review code</span>
-              <span><i class="member-stats-swatch member-stats-other"></i>Khác</span>
+              <span><i class="member-stats-swatch member-stats-other"></i>Other</span>
             </div>
-            <div id="memberStatsChart" class="member-stats-chart" aria-label="Biểu đồ giờ theo thành viên"></div>
+            <div id="memberStatsChart" class="member-stats-chart" aria-label="Hours by member"></div>
             <div class="table-wrap">
               <table class="member-stats-table">
                 <thead>
-                  <tr><th>Thành viên</th><th>Code</th><th>Test</th><th>Fix bug</th><th>Review code</th><th>Khác</th><th>Tổng</th></tr>
+                  <tr><th>Member</th><th>Code</th><th>Test</th><th>Fix bug</th><th>Review code</th><th>Other</th><th>Total</th></tr>
                 </thead>
                 <tbody id="memberStatsRows">
-                  <tr><td colspan="7" class="empty-cell">Chọn khoảng thời gian và bấm Load data.</td></tr>
+                  <tr><td colspan="7" class="empty-cell">Select a date range and click Load data.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -503,7 +503,7 @@
     </main>
 
     <script src="./vendor/xlsx.full.min.js?v=20260609-3"></script>
-    <script src="./app.js?v=20261021-2"></script>
+    <script src="./app.js?v=20261022-1"></script>
     <script src="./schema-config.js?v=20260625-1"></script>
     <script src="./polling.js?v=20260625-1"></script>
   </body>
