@@ -65,10 +65,7 @@ function showUpdateNotification(issues) {
       renotify: true,
     });
     n.onclick = () => {
-      const opened = window.open(window.location.href, "_blank");
-      if (!opened) {
-        window.focus();
-      }
+      window.focus();
       n.close();
     };
   } catch {}

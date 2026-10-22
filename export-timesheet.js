@@ -176,7 +176,11 @@ function buildTimesheetSheet(entries, member, range) {
       setCell(row, 3, issueId ? "On-Ticket" : "Non-Ticket", TIMESHEET_STYLE.center);
       setCell(row, 4, description, issueId ? TIMESHEET_STYLE.link : TIMESHEET_STYLE.body);
       setCell(row, 5, hours, TIMESHEET_STYLE.center);
-      setCell(row, 6, entry.comments || "", TIMESHEET_STYLE.body);
+      const activityName = String((entry.activity && entry.activity.name) || "");
+      const notes = activityName && entry.comments
+        ? `${activityName}: ${entry.comments}`
+        : activityName || entry.comments || "";
+      setCell(row, 6, notes, TIMESHEET_STYLE.body);
       dayLogged += hours;
       totalHours += hours;
       row += 1;

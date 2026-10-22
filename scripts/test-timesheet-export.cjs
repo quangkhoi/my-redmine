@@ -63,17 +63,18 @@ vm.runInContext(code, context);
 const members = vm.runInContext("MEMBERS_CONFIG", context);
 assert.equal(members.length, 5, "members config loads 5 active members");
 
-const entry = (spent_on, hours, issueId, comments) =>
-  ({ spent_on, hours, comments, user: { id: 99 }, issue: issueId ? { id: issueId } : null });
+const entry = (spent_on, hours, issueId, comments, activityName) =>
+  ({ spent_on, hours, comments, user: { id: 99 }, issue: issueId ? { id: issueId } : null,
+    activity: activityName ? { name: activityName } : {} });
 const tuyenEntries = [
-  entry("2026-08-03", 8, 94952, "Fix comment & testing"),
-  entry("2026-08-04", 3, 97109, "Study task demand"),
-  entry("2026-08-04", 5, 97528, ""),
+  entry("2026-08-03", 8, 94952, "Fix comment & testing", "開発：1回目"),
+  entry("2026-08-04", 3, 97109, "Study task demand", "開発修正：2回目以降"),
+  entry("2026-08-04", 5, 97528, "", "開発単体テスト"),
   entry("2026-08-05", 1, 89746, ""),
   entry("2026-08-07", 4, null, "Meeting"),
-  entry("2026-08-12", 10, 97826, "Overtime"),
+  entry("2026-08-12", 10, 97826, "Overtime", "コードレビュー"),
 ];
-const namEntries = [entry("2026-08-06", 6, 97109, "Nam work")];
+const namEntries = [entry("2026-08-06", 6, 97109, "Nam work", "開発：1回目")];
 namEntries.forEach((e) => { e.user = { id: 94 }; });
 
 const range = context.getSelectedLoginMonthRange();
@@ -116,26 +117,31 @@ assert.equal(aug3[0].desc.l.Target, "https://redmine.wdm.co.jp/issues/94952");
 assert.equal(aug3[0].desc.s, 10, "hyperlink style left-aligned");
 assert.equal(aug3[0].hours.v, 8);
 assert.equal(aug3[0].hours.s, 6, "log work centered");
-assert.equal(aug3[0].notes, "Fix comment & testing");
+assert.equal(aug3[0].notes, "開発：1回目: Fix comment & testing", "notes = Activity: comment");
 
 const aug4 = rowsFor("08/04");
 assert.equal(aug4.length, 2, "two entries on 08/04, no remain row");
 assert.deepEqual(aug4.map((row) => row.hours.v), [3, 5]);
+assert.deepEqual(aug4.map((row) => row.notes),
+  ["開発修正：2回目以降: Study task demand", "開発単体テスト"],
+  "activity+comment joined; activity-only keeps name without colon");
 
 const aug5 = rowsFor("08/05");
 assert.equal(aug5.length, 2, "entry + remain row on 08/05");
 assert.equal(aug5[0].hours.v, 1);
+assert.equal(aug5[0].notes, "", "no activity and no comment renders empty notes");
 assert.equal(aug5[1].type, "Non-Ticket");
 assert.equal(aug5[1].desc.v, "-");
 assert.equal(aug5[1].desc.s, 5, "description left-aligned");
 assert.equal(aug5[1].hours.v, 7, "remain = 8 - 1");
+assert.equal(aug5[1].notes, "", "remain row has empty notes");
 
 const aug7 = rowsFor("08/07");
 assert.equal(aug7.length, 2, "non-ticket entry + remain row on 08/07");
 assert.equal(aug7[0].type, "Non-Ticket");
 assert.equal(aug7[0].desc.v, "-");
 assert.equal(aug7[0].hours.v, 4);
-assert.equal(aug7[0].notes, "Meeting");
+assert.equal(aug7[0].notes, "Meeting", "comment-only fallback without activity");
 assert.equal(aug7[1].hours.v, 4);
 
 const aug6 = rowsFor("08/06");
@@ -146,6 +152,7 @@ assert.equal(aug6[0].hours.v, 8);
 const aug12 = rowsFor("08/12");
 assert.equal(aug12.length, 1, "day logged over 8h gets no remain row");
 assert.equal(aug12[0].hours.v, 10);
+assert.equal(aug12[0].notes, "コードレビュー: Overtime");
 
 const totalCell = cell(4, 8);
 assert.equal(totalCell.v, 170, "total = 21 weekdays baseline with 10h overtime day");
