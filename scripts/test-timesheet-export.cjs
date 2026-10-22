@@ -4,18 +4,21 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const path = require("node:path");
 const root = path.join(__dirname, "..");
-const source = fs.readFileSync(path.join(root, "app.js"), "utf8");
+const source = fs.readFileSync(path.join(root, "export-timesheet.js"), "utf8");
+const appSource = fs.readFileSync(path.join(root, "app.js"), "utf8");
 
-function extractFunction(name) {
-  const start = source.search(new RegExp(`(?:async )?function ${name}\\(`));
+function extractFunction(name, fileSource) {
+  const start = fileSource.search(new RegExp(`(?:async )?function ${name}\\(`));
   assert(start >= 0, `Missing function ${name}`);
-  return source.slice(start, source.indexOf("\n}", start) + 2);
+  return fileSource.slice(start, fileSource.indexOf("\n}", start) + 2);
 }
 
-const functionNames = ["buildTimesheetSheet", "exportLogTimeReport", "reportColumnWidth",
-  "convertCharsToExcelColumnWidth", "normalizeBaseUrl", "sortTimeEntries", "compareDate", "pad2", "formatTimestamp"];
+const featureNames = ["buildTimesheetSheet", "exportLogTimeReport"];
+const sharedNames = ["reportColumnWidth", "convertCharsToExcelColumnWidth", "normalizeBaseUrl",
+  "sortTimeEntries", "compareDate", "pad2", "formatTimestamp"];
 const consts = ["TIMESHEET_STYLE", "DAY_NAMES", "WORKING_HOURS_PER_DAY"];
-let code = functionNames.map(extractFunction).join("\n");
+let code = featureNames.map((name) => extractFunction(name, source)).join("\n");
+code += "\n" + sharedNames.map((name) => extractFunction(name, appSource)).join("\n");
 consts.forEach((name) => {
   const start = source.indexOf(`const ${name} =`);
   assert(start >= 0, `Missing const ${name}`);
@@ -35,6 +38,9 @@ assert(!vendorSource.includes("FFB7C9C4"), "table borders should be black, not p
 assert.equal((vendorSource.match(/FF000000/g) || []).length, 4, "thin border on all four sides is black");
 assert(indexHtml.includes('id="exportLogTime"'), "Log time view should expose export button");
 assert(indexHtml.includes("members-config.js"), "index.html should load members-config.js");
+assert(indexHtml.includes("export-timesheet.js"), "index.html should load export-timesheet.js");
+assert(/app\.js[^>]*>\s*<\/script>\s*<script src="\.\/export-timesheet\.js/.test(indexHtml),
+  "export-timesheet.js should load right after app.js");
 
 const context = {
   console, URL, TextEncoder, Blob,
