@@ -47,7 +47,6 @@ const WORK_ITEM_STATUS_NAMES = new Set([
 const MY_TASK_EXCLUDED_STATUS_NAMES = new Set([
   ISSUE_STATUS.cancelled.name,
   ISSUE_STATUS.onHold.name,
-  ISSUE_STATUS.done.name,
 ]);
 const RELEASE_TARGET_FIELD_NAME = "リリース対象";
 const RELEASE_TARGET_VALUE_NAMES = new Map([
